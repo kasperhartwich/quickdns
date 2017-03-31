@@ -16,6 +16,9 @@ class QuickDns
     private $client;
     private $cookieJar;
 
+    const METHOD_POST = 'POST';
+    const METHOD_GET = 'GET';
+
     /**
      * QuickDns constructor.
      * @param string $email
@@ -45,9 +48,8 @@ class QuickDns
         $response = $this->request('login', [
             'email' => $this->email,
             'password' => $this->password,
-        ]);
+        ], self::METHOD_POST);
         $body = $response->getBody()->getContents();
-        var_dump($body);
         if (strpos($body, 'Log ud')) {
             return true;
         } elseif (strpos($body, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
@@ -63,10 +65,13 @@ class QuickDns
      * @param string $method
      * @return \Psr\Http\Message\ResponseInterface
      */
-    private function request($function, $parameters = [], $method = 'POST')
+    private function request($function, $parameters = [], $method = self::METHOD_GET)
     {
-        return $this->client->post('login', [
-            'form_params' => $parameters
-        ]);
+        if ($method == self::METHOD_POST) {
+            $options = ['form_params' => $parameters];
+        } else {
+            $options = ['query' => $parameters];
+        }
+        return $this->client->post($function, $options);
     }
 }
