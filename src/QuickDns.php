@@ -76,8 +76,8 @@ class QuickDns
             $zone = new Zone($this, $zone_data[2]);
             $zone->id = $zone_data[0];
             $zone->domain = $zone_data[2];
-            $zone->template = $zone_data[3];
-            $zone->group = $zone_data[4];
+            $zone->template = $zone_data[3]=='Ingen' ? false : $zone_data[3];
+            $zone->group = $zone_data[4]=='Ingen' ? false : $zone_data[4];
             $zone->updated = $zone_data[5];
             $zones[] = $zone;
         }
