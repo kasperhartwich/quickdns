@@ -17,5 +17,13 @@ class QuickDnsTest extends TestCase
         $this->expectExceptionMessage('Login failed.');
         $quickDns = new QuickDns(self::API_EMAIL, 'wrong-password');
     }
+
+    public function testGetZones()
+    {
+        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $zones = $quickDns->getZones();
+        $this->assertTrue(is_Array($zones));
+
+    }
 }
 

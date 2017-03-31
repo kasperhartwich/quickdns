@@ -3,6 +3,7 @@ namespace QuickDns;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
+use Symfony\Component\DomCrawler\Crawler;
 
 /**
  * Class QuickDns
@@ -49,13 +50,48 @@ class QuickDns
             'email' => $this->email,
             'password' => $this->password,
         ], self::METHOD_POST);
-        $body = $response->getBody()->getContents();
-        if (strpos($body, 'Log ud')) {
+        if (strpos($response, 'Log ud')) {
             return true;
-        } elseif (strpos($body, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
+        } elseif (strpos($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
         }
         throw new \UnexpectedValueException('Unknown response at login');
+    }
+
+    /**
+     * Get zones
+     * @return array
+     */
+    public function getZones()
+    {
+        $zones = [];
+        $response = $this->request('zones', QuickDns::METHOD_GET);
+        $html = new Crawler($response);
+        foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
+            $zone_data = [$node->getAttribute('zoneid')];
+            foreach($node->getElementsByTagName('td') as $n) {
+                $zone_data[] = trim($n->nodeValue);
+            }
+            //Generate zone
+            $zone = new Zone($this, $zone_data[2]);
+            $zone->id = $zone_data[0];
+            $zone->domain = $zone_data[2];
+            $zone->template = $zone_data[3];
+            $zone->group = $zone_data[4];
+            $zone->updated = $zone_data[5];
+            $zones[] = $zone;
+        }
+        return $zones;
+    }
+
+    public function getZone($domain)
+    {
+        foreach ($this->getZones() as $zone) {
+            if ($zone->domain == $domain) {
+                return $zone;
+            }
+        }
+        throw new \UnexpectedValueException('Unknown domain');
     }
 
     /**
@@ -65,13 +101,15 @@ class QuickDns
      * @param string $method
      * @return \Psr\Http\Message\ResponseInterface
      */
-    private function request($function, $parameters = [], $method = self::METHOD_GET)
+    public function request($function, $parameters = [], $method = self::METHOD_GET)
     {
         if ($method == self::METHOD_POST) {
             $options = ['form_params' => $parameters];
         } else {
             $options = ['query' => $parameters];
         }
-        return $this->client->post($function, $options);
+        $response = $this->client->request($method, $function, $parameters ? $options : null);
+        //Apparently QuickDns declare the html as xml.
+        return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());
     }
 }
