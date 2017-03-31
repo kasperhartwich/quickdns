@@ -8,15 +8,14 @@ class QuickDnsTest extends TestCase
     public function testLoginSuccessfull()
     {
         $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
-        $response = $quickDns->login();
-        $this->assertTrue($response);
+        $this->assertEquals(QuickDns::class, get_class($quickDns));
     }
 
     public function testLoginWrongPassword()
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Login failed.');
         $quickDns = new QuickDns(self::API_EMAIL, 'wrong-password');
-        $response = $quickDns->login();
-        $this->assertFalse($response);
     }
 }
 

@@ -31,6 +31,9 @@ class QuickDns
             'base_uri' => $this->base_uri,
             'cookies' => $this->cookieJar,
         ]);
+        if (!$this->login()) {
+            throw new \InvalidArgumentException('Login failed.');
+        }
     }
 
     /**
@@ -50,7 +53,6 @@ class QuickDns
         } elseif (strpos($body, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
         }
-
         throw new \UnexpectedValueException('Unknown response at login');
     }
 
