@@ -59,7 +59,7 @@ class QuickDns
     }
 
     /**
-     * Get zones
+     * Get Zones
      * @return array
      */
     public function getZones()
@@ -69,8 +69,8 @@ class QuickDns
         $html = new Crawler($response);
         foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
-            foreach($node->getElementsByTagName('td') as $n) {
-                $zone_data[] = trim($n->nodeValue);
+            foreach($node->getElementsByTagName('td') as $td) {
+                $zone_data[] = trim($td->nodeValue);
             }
             //Generate zone
             $zone = new Zone($this, $zone_data[2]);
@@ -84,6 +84,11 @@ class QuickDns
         return $zones;
     }
 
+    /**
+     * Get Zone by Domain
+     * @param $domain
+     * @return mixed
+     */
     public function getZone($domain)
     {
         foreach ($this->getZones() as $zone) {
