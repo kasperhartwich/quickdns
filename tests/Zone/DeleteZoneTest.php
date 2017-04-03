@@ -9,7 +9,7 @@ class DeleteZoneTest extends TestCase
 {
     public function testDeleteSuccess()
     {
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $zone = $quickDns->getZone('quickdns-api-test-domain.dk');
         $zone->delete();
 

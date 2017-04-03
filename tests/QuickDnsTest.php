@@ -7,7 +7,7 @@ class QuickDnsTest extends TestCase
 {
     public function testLoginSuccessfull()
     {
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $this->assertEquals(QuickDns::class, get_class($quickDns));
     }
 
@@ -15,12 +15,12 @@ class QuickDnsTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Login failed.');
-        $quickDns = new QuickDns(self::API_EMAIL, 'wrong-password');
+        $quickDns = new QuickDns($this->apiEmail, 'wrong-password');
     }
 
     public function testGetZones()
     {
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $zones = $quickDns->getZones();
         $this->assertTrue(is_Array($zones));
 

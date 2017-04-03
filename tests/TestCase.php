@@ -6,9 +6,17 @@ namespace Tests;
  */
 class TestCase extends \PHPUnit\Framework\TestCase
 {
-    const API_EMAIL = 'quickdns-api@focusweb.dk';
-    const API_PASSWORD = 'testuser';
-
     protected $quickDns;
+    protected $apiEmail;
+    protected $apiPassword;
 
+    public function setUp()
+    {
+        if (!getenv('QUICKDNS_EMAIL')) {
+            throw new \Exception('ENV variables is not set. See documentation,.');
+        }
+        $this->apiEmail = getenv('QUICKDNS_EMAIL');
+        $this->apiPassword= getenv('QUICKDNS_PASSWORD');
+        parent::setUp();
+    }
 }

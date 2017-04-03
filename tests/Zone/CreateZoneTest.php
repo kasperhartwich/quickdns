@@ -9,7 +9,7 @@ class CreateZoneTest extends TestCase
 {
     public function testCreateSuccess()
     {
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $zone = new Zone($quickDns, 'quickdns-api-test-domain.dk');
         $zone->create();
         $this->assertEquals(Zone::class, get_class($zone));
@@ -20,7 +20,7 @@ class CreateZoneTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Zonen eksisterer allerede');
 
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $zone = new Zone($quickDns, 'quickdns-api-test-domain.dk');
         $zone->create();
     }
@@ -30,7 +30,7 @@ class CreateZoneTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Zonens navn er ugyldigt');
 
-        $quickDns = new QuickDns(self::API_EMAIL, self::API_PASSWORD);
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
         $zone = new Zone($quickDns, 'quickdns-api-test-domain.invalid');
         $zone->create();
     }
