@@ -1,5 +1,5 @@
 <?php
-namespace Tests\Zone;
+namespace Tests\Template;
 
 use QuickDns\Template;
 use Tests\TestCase;

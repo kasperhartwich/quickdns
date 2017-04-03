@@ -12,10 +12,11 @@ class Template
     public $id;
     public $name;
     public $group;
+    public $zones;
     public $updated;
 
     /**
-     * Zone constructor.
+     * Template constructor.
      * @param QuickDns $quickdns
      * @param null $name
      */
@@ -27,14 +28,12 @@ class Template
 
     /**
      * Create Template
-     * @param bool $get_data
      * @return bool
      */
-    public function create($get_data = false)
+    public function create()
     {
         $response = $this->quickdns->request('addtemplate', [
-            'zone' => $this->name,
-            'getdata' => $get_data ? 1 : 0,
+            'zone' => $this->name
         ], QuickDns::METHOD_GET);
         if (strpos($response, 'ERROR')) {
             $xml = new \SimpleXMLElement($response);
