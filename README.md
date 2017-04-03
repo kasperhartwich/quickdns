@@ -1,4 +1,4 @@
-QuickDNS
+QuickDNS [![Build Status](https://travis-ci.org/kasperhartwich/quickdns.svg?branch=master)](https://travis-ci.org/kasperhartwich/quickdns)
 ========
 
 For how to use, take a look at the tests for now.
