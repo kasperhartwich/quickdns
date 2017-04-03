@@ -87,7 +87,7 @@ class QuickDns
     /**
      * Get Zone by Domain
      * @param $domain
-     * @return mixed
+     * @return Zone
      */
     public function getZone($domain)
     {
@@ -97,6 +97,47 @@ class QuickDns
             }
         }
         throw new \UnexpectedValueException('Unknown domain');
+    }
+
+    /**
+     * Get Templates
+     * @return array
+     */
+    public function getTemplates()
+    {
+        $templates = [];
+        $response = $this->request('templates', QuickDns::METHOD_GET);
+        $html = new Crawler($response);
+        foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
+            $template_data = [str_replace('/edittemplate?id=', '', $node->firstChild->firstChild->getAttribute('href'))];
+            foreach($node->getElementsByTagName('td') as $td) {
+                $template_data[] = trim($td->nodeValue);
+            }
+            //Generate zone
+            $template = new Template($this, $template_data[1]);
+            $template->id = $template_data[0];
+            $template->name = $template_data[1];
+            $template->zones = $template_data[2];
+            $template->group = $template_data[3]=='Ingen' ? false : $template_data[4];
+            $template->updated = $template_data[4];
+            $templates[] = $template;
+        }
+        return $templates;
+    }
+
+    /**
+     * Get Template by Name
+     * @param $name
+     * @return Template
+     */
+    public function getTemplate($name)
+    {
+        foreach ($this->getTemplates() as $template) {
+            if ($template->name == $name) {
+                return $template;
+            }
+        }
+        throw new \UnexpectedValueException('Unknown template');
     }
 
     /**
