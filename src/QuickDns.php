@@ -113,12 +113,13 @@ class QuickDns
             foreach($node->getElementsByTagName('td') as $td) {
                 $template_data[] = trim($td->nodeValue);
             }
-            //Generate zone
+
+            //Generate template
             $template = new Template($this, $template_data[1]);
             $template->id = $template_data[0];
             $template->name = $template_data[1];
             $template->zones = $template_data[2];
-            $template->group = $template_data[3]=='Ingen' ? false : $template_data[4];
+            $template->group = $template_data[3]=='Ingen' ? false : $template_data[3];
             $template->updated = $template_data[4];
             $templates[] = $template;
         }
@@ -138,6 +139,48 @@ class QuickDns
             }
         }
         throw new \UnexpectedValueException('Unknown template');
+    }
+
+    /**
+     * Get Groups
+     * @return array
+     */
+    public function getGroups()
+    {
+        $groups = [];
+        $response = $this->request('groups', QuickDns::METHOD_GET);
+        $html = new Crawler($response);
+        foreach ($html->filterXPath('//table[@id="group_table"]/tr[not(@class="listheader")]') as $node) {
+            if ($node->firstChild->nodeValue=='Gruppe') {continue;}
+            $group_data = [str_replace(['groupid = ', '; del(parentNode.parentNode.rowIndex);'], '', $node->lastChild->previousSibling->firstChild->getAttribute('onclick'))];
+            foreach($node->getElementsByTagName('td') as $td) {
+                $group_data[] = trim($td->nodeValue);
+            }
+
+            //Generate group
+            $group = new Group($this, $group_data[1]);
+            $group->id = $group_data[0];
+            $group->name = $group_data[1];
+            $group->members = $group_data[2]=='Ingen' ? false : $group_data[2];
+            $group->updated = $group_data[3];
+            $groups[] = $group;
+        }
+        return $groups;
+    }
+
+    /**
+     * Get Group by Name
+     * @param $name
+     * @return Group
+     */
+    public function getGroup($name)
+    {
+        foreach ($this->getGroups() as $group) {
+            if ($group->name == $name) {
+                return $group;
+            }
+        }
+        throw new \UnexpectedValueException('Unknown group');
     }
 
     /**
