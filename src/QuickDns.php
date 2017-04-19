@@ -7,6 +7,7 @@ use Symfony\Component\DomCrawler\Crawler;
 
 /**
  * Class QuickDns
+ * @package QuickDns
  */
 class QuickDns
 {

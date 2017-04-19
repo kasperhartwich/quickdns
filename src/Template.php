@@ -3,6 +3,11 @@ namespace QuickDns;
 
 /**
  * Class Template
+ * @property integer $id
+ * @property string $name
+ * @property array $zones
+ * @property array $groups
+ * @property string $updated
  * @package QuickDns
  */
 class Template
@@ -11,8 +16,8 @@ class Template
 
     public $id;
     public $name;
-    public $group;
     public $zones;
+    public $groups;
     public $updated;
 
     /**

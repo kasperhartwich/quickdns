@@ -3,6 +3,9 @@ namespace QuickDns;
 
 /**
  * Class Group
+ * @property integer $id
+ * @property string $name
+ * @property string $updated
  * @package QuickDns
  */
 class Group
