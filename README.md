@@ -8,8 +8,6 @@ Update models when creating
 Create records
 Delete records
 Record model
-Add zone to group
-Remove zone from group
 Support multiple templates and groups for one zone
 Make updated a DateTime
 ..more..

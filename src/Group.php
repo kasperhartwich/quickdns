@@ -61,4 +61,41 @@ class Group
         }
         return true;
     }
+
+    /**
+     * Add Zone to group
+     * TODO: Support multiple groups
+     * @param Zone $zone
+     * @return bool
+     */
+    public function addZone(Zone $zone)
+    {
+        $response = $this->quickdns->request('updategroups', [
+            'zone' => $zone->id,
+            'group' => $this->id,
+        ]);
+        if (strpos($response, 'ERROR')) {
+            $xml = new \SimpleXMLElement($response);
+            throw new \InvalidArgumentException($xml->statustext);
+        }
+        return true;
+    }
+
+    /**
+     * Add Zone to group
+     * TODO: Support multiple groups
+     * @param Zone $zone
+     * @return bool
+     */
+    public function removeZone(Zone $zone)
+    {
+        $response = $this->quickdns->request('updategroups', [
+            'zone' => $zone->id,
+        ]);
+        if (strpos($response, 'ERROR')) {
+            $xml = new \SimpleXMLElement($response);
+            throw new \InvalidArgumentException($xml->statustext);
+        }
+        return true;
+    }
 }

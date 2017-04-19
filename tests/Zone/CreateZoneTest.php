@@ -37,6 +37,28 @@ class CreateZoneTest extends TestCase
         $this->assertEmpty($zone->templates);
     }
 
+    public function testAddToGroupSuccess()
+    {
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
+        $group = $quickDns->getGroup('test-group');
+        $zone = $quickDns->getZone('quickdns-api-test-domain.dk');
+        $group->addZone($zone);
+
+        $zone = $quickDns->getZone('quickdns-api-test-domain.dk');
+        $this->assertEquals($group->name, array_pop($zone->groups));
+    }
+
+    public function testRemoveFromGroupSuccess()
+    {
+        $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
+        $group = $quickDns->getGroup('test-group');
+        $zone = $quickDns->getZone('quickdns-api-test-domain.dk');
+        $group->removeZone($zone);
+
+        $zone = $quickDns->getZone('quickdns-api-test-domain.dk');
+        $this->assertEmpty($zone->groups);
+    }
+
     public function testCreateAlreadyExists()
     {
         $this->expectException(\InvalidArgumentException::class);
