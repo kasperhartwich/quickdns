@@ -76,8 +76,8 @@ class QuickDns
             $zone = new Zone($this, $zone_data[2]);
             $zone->id = $zone_data[0];
             $zone->domain = $zone_data[2];
-            $zone->template = $zone_data[3]=='Ingen' ? false : $zone_data[3];
-            $zone->group = $zone_data[4]=='Ingen' ? false : $zone_data[4];
+            $zone->templates = $zone_data[3]=='Ingen' ? [] : explode(', ', $zone_data[3]);
+            $zone->groups = $zone_data[4]=='Ingen' ? [] : explode(', ', $zone_data[4]);
             $zone->updated = $zone_data[5];
             $zones[] = $zone;
         }
@@ -119,7 +119,7 @@ class QuickDns
             $template->id = $template_data[0];
             $template->name = $template_data[1];
             $template->zones = $template_data[2];
-            $template->group = $template_data[3]=='Ingen' ? false : $template_data[3];
+            $template->groups = $template_data[3]=='Ingen' ? [] : explode(', ', $template_data[3]);
             $template->updated = $template_data[4];
             $templates[] = $template;
         }
@@ -161,7 +161,7 @@ class QuickDns
             $group = new Group($this, $group_data[1]);
             $group->id = $group_data[0];
             $group->name = $group_data[1];
-            $group->members = $group_data[2]=='Ingen' ? false : $group_data[2];
+            $group->members = $group_data[2]=='Ingen' ? [] : explode(', ', $group_data[2]);
             $group->updated = $group_data[3];
             $groups[] = $group;
         }

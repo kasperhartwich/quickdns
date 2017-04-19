@@ -60,4 +60,41 @@ class Template
         }
         return true;
     }
+
+    /**
+     * Add Zone to template
+     * TODO: Support multiple templates
+     * @param Zone $zone
+     * @return bool
+     */
+    public function addZone(Zone $zone)
+    {
+        $response = $this->quickdns->request('updatetemplates', [
+            'zone' => $zone->id,
+            'template' => $this->id,
+        ]);
+        if (strpos($response, 'ERROR')) {
+            $xml = new \SimpleXMLElement($response);
+            throw new \InvalidArgumentException($xml->statustext);
+        }
+        return true;
+    }
+
+    /**
+     * Add Zone to template
+     * TODO: Support multiple templates
+     * @param Zone $zone
+     * @return bool
+     */
+    public function removeZone(Zone $zone)
+    {
+        $response = $this->quickdns->request('updatetemplates', [
+            'zone' => $zone->id,
+        ]);
+        if (strpos($response, 'ERROR')) {
+            $xml = new \SimpleXMLElement($response);
+            throw new \InvalidArgumentException($xml->statustext);
+        }
+        return true;
+    }
 }

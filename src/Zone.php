@@ -11,8 +11,8 @@ class Zone
 
     public $id;
     public $domain;
-    public $template;
-    public $group;
+    public $templates;
+    public $groups;
     public $updated;
 
     /**
