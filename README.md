@@ -1,4 +1,4 @@
-QuickDNS [![Build Status](https://travis-ci.org/kasperhartwich/quickdns.svg?branch=master)](https://travis-ci.org/kasperhartwich/quickdns)
+QuickDNS [![Build Status](https://travis-ci.org/kasperhartwich/quickdns.svg?branch=master)](https://travis-ci.org/kasperhartwich/quickdns) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kasperhartiwch/quickdns/master/LICENSE.txt) 
 ========
 
 For how to use, take a look at the tests for now. This is work-in-progress.
@@ -39,7 +39,7 @@ You can do so by setting the variables in bash when running phpunit:
 
 `QUICKDNS_EMAIL=email@quickdns.dk QUICKDNS_PASSWORD=your-password vendor/bin/phpunit`
 
-Notice: You will need a template on you're account called `test-template` for the tests to succeed.
+Notice: You will need a template called `test-template` and a group called `test-group` on you're account for the tests to succeed.
 
 ### License
 Licensed under MIT License.
