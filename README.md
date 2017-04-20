@@ -3,15 +3,6 @@ QuickDNS [![Build Status](https://travis-ci.org/kasperhartwich/quickdns.svg?bran
 
 For how to use, take a look at the tests for now. This is work-in-progress.
 
-### TODO
-Update models when creating
-Create records
-Delete records
-Record model
-Support multiple templates and groups for one zone
-Make updated a DateTime
-..more..
-
 ### Example
 This example creates multiple domains with the same template.
 
