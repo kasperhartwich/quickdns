@@ -1,8 +1,9 @@
 {
   "name": "kasperhartwich/quickdns",
   "description": "QuickDNS library",
-  "type": "library",
+  "license": "MIT",
   "keywords": ["quickdns", "dns"],
+  "type": "library",
   "homepage": "https://github.com/kasperhartwich/quickdns/",
   "authors": [
     {

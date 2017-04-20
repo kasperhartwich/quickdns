@@ -41,5 +41,8 @@ You can do so by setting the variables in bash when running phpunit:
 
 Notice: You will need a template on you're account called `test-template` for the tests to succeed.
 
-#### Contribute
+### License
+Licensed under MIT License.
+
+### Contribute
 You are more than welcome to contribute. Just create a pull request.
