@@ -3,18 +3,16 @@ namespace QuickDns;
 
 /**
  * Class Group
- * @property integer $id
  * @property string $name
- * @property string $updated
+ * @property array $members
  * @package QuickDns
  */
-class Group
+class Group extends BaseModel
 {
     protected $quickdns;
 
-    public $id;
     public $name;
-    public $updated;
+    public $members = [];
 
     /**
      * Group constructor.

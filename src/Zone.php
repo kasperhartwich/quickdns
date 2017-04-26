@@ -3,22 +3,18 @@ namespace QuickDns;
 
 /**
  * Class Zone
- * @property integer $id
  * @property string $domain
  * @property array $templates
  * @property array $groups
- * @property string $updated
  * @package QuickDns
  */
-class Zone
+class Zone extends BaseModel
 {
     protected $quickdns;
 
-    public $id;
     public $domain;
     public $templates;
     public $groups;
-    public $updated;
 
     /**
      * Zone constructor.

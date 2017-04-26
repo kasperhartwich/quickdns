@@ -3,22 +3,18 @@ namespace QuickDns;
 
 /**
  * Class Template
- * @property integer $id
  * @property string $name
  * @property array $zones
  * @property array $groups
- * @property string $updated
  * @package QuickDns
  */
-class Template
+class Template extends BaseModel
 {
     protected $quickdns;
 
-    public $id;
     public $name;
     public $zones;
     public $groups;
-    public $updated;
 
     /**
      * Template constructor.

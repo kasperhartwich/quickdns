@@ -187,18 +187,20 @@ class QuickDns
     /**
      * Request the API
      * @param $function
-     * @param array $parameters
+     * @param array $options
      * @param string $method
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function request($function, $parameters = [], $method = self::METHOD_GET)
+    public function request($function, $options = [], $method = self::METHOD_GET)
     {
-        if ($method == self::METHOD_POST) {
-            $options = ['form_params' => $parameters];
-        } else {
-            $options = ['query' => $parameters];
+        if (!empty($options)) {
+            if ($method == self::METHOD_POST) {
+                $options = ['form_params' => $options];
+            } else {
+                $options = ['query' => $options];
+            }
         }
-        $response = $this->client->request($method, $function, $parameters ? $options : null);
+        $response = $this->client->request($method, $function, $options);
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());
     }
