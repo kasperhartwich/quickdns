@@ -1,23 +1,25 @@
 <?php
+
 namespace QuickDns;
 
 /**
  * Class Group
+ *
  * @property string $name
  * @property array $members
- * @package QuickDns
  */
 class Group extends BaseModel
 {
     protected $quickdns;
 
     public $name;
+
     public $members = [];
 
     /**
      * Group constructor.
-     * @param QuickDns $quickdns
-     * @param null $name
+     *
+     * @param  null  $name
      */
     public function __construct(QuickDns $quickdns, $name = null)
     {
@@ -27,27 +29,30 @@ class Group extends BaseModel
 
     /**
      * Create Group
+     *
      * @return bool
      */
     public function create()
     {
         $response = $this->quickdns->request('addgroup', [
-            'group' => $this->name
+            'group' => $this->name,
         ], QuickDns::METHOD_GET);
         if (strpos($response, 'ERROR')) {
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Delete Group
+     *
      * @return bool
      */
     public function delete()
     {
-        if (!$this->id) {
+        if (! $this->id) {
             throw new \BadFunctionCallException('Template is not created yet.');
         }
         $response = $this->quickdns->request('delgroup', [
@@ -57,13 +62,14 @@ class Group extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Add Zone to group
      * TODO: Support multiple groups
-     * @param Zone $zone
+     *
      * @return bool
      */
     public function addZone(Zone $zone)
@@ -76,13 +82,14 @@ class Group extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Add Zone to group
      * TODO: Support multiple groups
-     * @param Zone $zone
+     *
      * @return bool
      */
     public function removeZone(Zone $zone)
@@ -94,6 +101,7 @@ class Group extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 }

@@ -1,9 +1,10 @@
 <?php
+
 namespace Tests\Template;
 
+use QuickDns\QuickDns;
 use QuickDns\Template;
 use Tests\TestCase;
-use QuickDns\QuickDns;
 
 class CreateTemplateTest extends TestCase
 {
@@ -35,4 +36,3 @@ class CreateTemplateTest extends TestCase
         $template->create();
     }
 }
-

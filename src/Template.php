@@ -1,25 +1,28 @@
 <?php
+
 namespace QuickDns;
 
 /**
  * Class Template
+ *
  * @property string $name
  * @property array $zones
  * @property array $groups
- * @package QuickDns
  */
 class Template extends BaseModel
 {
     protected $quickdns;
 
     public $name;
+
     public $zones;
+
     public $groups;
 
     /**
      * Template constructor.
-     * @param QuickDns $quickdns
-     * @param null $name
+     *
+     * @param  null  $name
      */
     public function __construct(QuickDns $quickdns, $name = null)
     {
@@ -29,27 +32,30 @@ class Template extends BaseModel
 
     /**
      * Create Template
+     *
      * @return bool
      */
     public function create()
     {
         $response = $this->quickdns->request('addtemplate', [
-            'zone' => $this->name
+            'zone' => $this->name,
         ], QuickDns::METHOD_GET);
         if (strpos($response, 'ERROR')) {
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Delete Template
+     *
      * @return bool
      */
     public function delete()
     {
-        if (!$this->id) {
+        if (! $this->id) {
             throw new \BadFunctionCallException('Template is not created yet.');
         }
         $response = $this->quickdns->request('deltemplate', [
@@ -59,13 +65,14 @@ class Template extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Add Zone to template
      * TODO: Support multiple templates
-     * @param Zone $zone
+     *
      * @return bool
      */
     public function addZone(Zone $zone)
@@ -78,13 +85,14 @@ class Template extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Add Zone to template
      * TODO: Support multiple templates
-     * @param Zone $zone
+     *
      * @return bool
      */
     public function removeZone(Zone $zone)
@@ -96,6 +104,7 @@ class Template extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests;
 
 use QuickDns\QuickDns;
@@ -18,4 +19,3 @@ final class QuickDnsTest extends TestCase
         new QuickDns($this->apiEmail, 'wrong-password');
     }
 }
-

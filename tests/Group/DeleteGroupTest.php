@@ -1,8 +1,9 @@
 <?php
+
 namespace Tests\Group;
 
-use Tests\TestCase;
 use QuickDns\QuickDns;
+use Tests\TestCase;
 
 class DeleteGroupTest extends TestCase
 {

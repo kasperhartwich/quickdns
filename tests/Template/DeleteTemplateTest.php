@@ -1,8 +1,9 @@
 <?php
+
 namespace Tests\Template;
 
-use Tests\TestCase;
 use QuickDns\QuickDns;
+use Tests\TestCase;
 
 class DeleteTemplateTest extends TestCase
 {

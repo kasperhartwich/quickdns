@@ -1,15 +1,16 @@
 <?php
+
 namespace QuickDns;
 
 /**
  * Class BaseModel
- * @property integer $id
+ *
+ * @property int $id
  * @property string $updated
- * @package QuickDns
  */
 class BaseModel
 {
     public $id;
-    public $updated;
 
+    public $updated;
 }

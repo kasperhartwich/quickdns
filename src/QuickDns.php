@@ -1,4 +1,5 @@
 <?php
+
 namespace QuickDns;
 
 use Carbon\Carbon;
@@ -8,24 +9,28 @@ use Symfony\Component\DomCrawler\Crawler;
 
 /**
  * Class QuickDns
- * @package QuickDns
  */
 class QuickDns
 {
     private $email;
+
     private $password;
+
     private $base_uri = 'https://www.quickdns.dk/';
 
     private $client;
+
     private $cookieJar;
 
     const METHOD_POST = 'POST';
+
     const METHOD_GET = 'GET';
 
     /**
      * QuickDns constructor.
-     * @param string $email
-     * @param string $password
+     *
+     * @param  string  $email
+     * @param  string  $password
      */
     public function __construct($email, $password)
     {
@@ -37,13 +42,14 @@ class QuickDns
             'base_uri' => $this->base_uri,
             'cookies' => $this->cookieJar,
         ]);
-        if (!$this->login()) {
+        if (! $this->login()) {
             throw new \InvalidArgumentException('Login failed.');
         }
     }
 
     /**
      * Login to QuickDns
+     *
      * @return bool
      */
     public function login()
@@ -62,6 +68,7 @@ class QuickDns
 
     /**
      * Get Zones
+     *
      * @return array
      */
     public function getZones()
@@ -71,24 +78,25 @@ class QuickDns
         $html = new Crawler($response);
         foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
-            foreach($node->getElementsByTagName('td') as $td) {
+            foreach ($node->getElementsByTagName('td') as $td) {
                 $zone_data[] = trim($td->nodeValue);
             }
             //Generate zone
             $zone = new Zone($this, $zone_data[2]);
             $zone->id = $zone_data[0];
             $zone->domain = $zone_data[2];
-            $zone->templates = $zone_data[3]=='Ingen' ? [] : explode(', ', $zone_data[3]);
-            $zone->groups = $zone_data[4]=='Ingen' ? [] : explode(', ', $zone_data[4]);
+            $zone->templates = $zone_data[3] == 'Ingen' ? [] : explode(', ', $zone_data[3]);
+            $zone->groups = $zone_data[4] == 'Ingen' ? [] : explode(', ', $zone_data[4]);
             $zone->updated = $zone_data[5];
             $zones[] = $zone;
         }
+
         return $zones;
     }
 
     /**
      * Get Zone by Domain
-     * @param $domain
+     *
      * @return Zone
      */
     public function getZone($domain)
@@ -103,14 +111,16 @@ class QuickDns
 
     /**
      * Get Templates
+     *
      * @return array
      */
     public function getTemplates()
     {
         $response = $this->request('templates', QuickDns::METHOD_GET);
+
         return (new Crawler($response))
             ->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]')
-            ->each(function(Crawler $tr) {
+            ->each(function (Crawler $tr) {
                 preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
                 $template = new Template($this, $tr->filterXPath('//td[1]')->text());
                 $template->id = (int) $match[1];
@@ -118,13 +128,14 @@ class QuickDns
                 $template->zones = (int) $tr->filterXPath('//td[2]')->text();
                 $template->groups = $tr->filterXPath('//td[3]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[3]')->text());
                 $template->updated = Carbon::parse((int) $tr->filterXPath('//td[4]')->text());
+
                 return $template;
             });
     }
 
     /**
      * Get Template by Name
-     * @param $name
+     *
      * @return Template
      */
     public function getTemplate($name)
@@ -139,14 +150,16 @@ class QuickDns
 
     /**
      * Get Groups
+     *
      * @return array
      */
     public function getGroups()
     {
         $response = $this->request('groups', QuickDns::METHOD_GET);
+
         return (new Crawler($response))
             ->filterXPath('//table[@id="group_table"]/tr')
-            ->each(function(Crawler $tr) {
+            ->each(function (Crawler $tr) {
                 if (str_contains($tr->html(), 'listheader')) {
                     return;
                 }
@@ -154,15 +167,16 @@ class QuickDns
                 $group = new Group($this, $tr->filterXPath('//td[1]')->text());
                 $group->id = (int) $match[1];
                 $group->name = $tr->filterXPath('//td[1]')->text();
-                $group->members = $tr->filterXPath('//td[2]')->text()=='Ingen' ? [] : explode(', ', $$tr->filterXPath('//td[2]')->text());
+                $group->members = $tr->filterXPath('//td[2]')->text() == 'Ingen' ? [] : explode(', ', $$tr->filterXPath('//td[2]')->text());
                 $group->updated = $tr->filterXPath('//td[3]')->text();
+
                 return $group;
             });
     }
 
     /**
      * Get Group by Name
-     * @param $name
+     *
      * @return Group
      */
     public function getGroup($name)
@@ -177,15 +191,16 @@ class QuickDns
 
     /**
      * Request the API
-     * @param string $function
-     * @param array $options
-     * @param string $method
-     * @return string
+     *
+     * @param  string  $function
+     * @param  array  $options
+     * @param  string  $method
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function request($function, $options = [], $method = self::METHOD_GET): string
     {
-        if (!empty($options)) {
+        if (! empty($options)) {
             if ($method == self::METHOD_POST) {
                 $options = ['form_params' => $options];
             } else {
@@ -194,7 +209,7 @@ class QuickDns
         }
         $response = $this->client->request($method, $function, $options);
 
-//        var_dump($response->getStatusCode(),$response->getBody()->getContents());
+        //        var_dump($response->getStatusCode(),$response->getBody()->getContents());
 
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());

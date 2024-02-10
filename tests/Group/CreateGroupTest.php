@@ -1,9 +1,10 @@
 <?php
+
 namespace Tests\Group;
 
 use QuickDns\Group;
-use Tests\TestCase;
 use QuickDns\QuickDns;
+use Tests\TestCase;
 
 final class CreateGroupTest extends TestCase
 {
@@ -35,4 +36,3 @@ final class CreateGroupTest extends TestCase
         $temnplate->create();
     }
 }
-

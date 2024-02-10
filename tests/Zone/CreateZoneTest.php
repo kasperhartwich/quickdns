@@ -1,9 +1,10 @@
 <?php
+
 namespace Tests\Zone;
 
-use Tests\TestCase;
 use QuickDns\QuickDns;
 use QuickDns\Zone;
+use Tests\TestCase;
 
 class CreateZoneTest extends TestCase
 {
@@ -11,7 +12,9 @@ class CreateZoneTest extends TestCase
     protected $quickDns;
 
     protected $testGroup = 'test-group'; // Need to exist before running tests
+
     protected $testTemplate = 'test-template';  // Need to exist before running tests
+
     protected $testDomain = 'quickdns-api-test-domain.dk';
 
     public function setUp(): void
@@ -94,4 +97,3 @@ class CreateZoneTest extends TestCase
         $zone->create();
     }
 }
-

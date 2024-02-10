@@ -1,8 +1,9 @@
 <?php
+
 namespace Tests\Zone;
 
-use Tests\TestCase;
 use QuickDns\QuickDns;
+use Tests\TestCase;
 
 class DeleteZoneTest extends TestCase
 {

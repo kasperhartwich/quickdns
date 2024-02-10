@@ -1,25 +1,28 @@
 <?php
+
 namespace QuickDns;
 
 /**
  * Class Zone
+ *
  * @property string $domain
  * @property array $templates
  * @property array $groups
- * @package QuickDns
  */
 class Zone extends BaseModel
 {
     protected $quickdns;
 
     public $domain;
+
     public $templates;
+
     public $groups;
 
     /**
      * Zone constructor.
-     * @param QuickDns $quickdns
-     * @param null $domain
+     *
+     * @param  null  $domain
      */
     public function __construct(QuickDns $quickdns, $domain = null)
     {
@@ -29,7 +32,8 @@ class Zone extends BaseModel
 
     /**
      * Create Zone
-     * @param bool $get_data
+     *
+     * @param  bool  $get_data
      * @return bool
      */
     public function create($get_data = false)
@@ -42,16 +46,18 @@ class Zone extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 
     /**
      * Delete Zone
+     *
      * @return bool
      */
     public function delete()
     {
-        if (!$this->id) {
+        if (! $this->id) {
             throw new \BadFunctionCallException('Zone is not created yet.');
         }
         $response = $this->quickdns->request('delzone', [
@@ -61,6 +67,7 @@ class Zone extends BaseModel
             $xml = new \SimpleXMLElement($response);
             throw new \InvalidArgumentException($xml->statustext);
         }
+
         return true;
     }
 }
