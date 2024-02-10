@@ -1,7 +1,19 @@
-QuickDNS [![Build Status](https://travis-ci.org/kasperhartwich/quickdns.svg?branch=master)](https://travis-ci.org/kasperhartwich/quickdns) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kasperhartiwch/quickdns/master/LICENSE.txt) 
-========
+# QuickDNS 
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/kasperhartwich/quickdns.svg?style=flat-square)](https://packagist.org/packages/kasperhartwich/quickdns)
 
 For how to use, take a look at the tests for now. This is work-in-progress.
+
+## Requirements
+* PHP 8.1
+
+## Installation
+
+You can install the package via composer:
+
+``` bash
+composer require kasperhartwich/quickdns
+```
 
 ### Example
 This example creates multiple domains with the same template.
@@ -35,11 +47,9 @@ echo 'Done' . PHP_EOL;
 
 ### Testing
 To test, you need to specify email and password for a account at QuickDNS as environment variables.
-You can do so by setting the variables in bash when running phpunit:
+You can do so by setting the variables in phpunit.xml file.
 
-`QUICKDNS_EMAIL=email@quickdns.dk QUICKDNS_PASSWORD=your-password vendor/bin/phpunit`
-
-Notice: You will need a template called `test-template` and a group called `test-group` on you're account for the tests to succeed.
+You also need to create the template and group `test-template` and `test-group` on your account.
 
 ### License
 Licensed under MIT License.

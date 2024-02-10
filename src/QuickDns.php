@@ -1,6 +1,7 @@
 <?php
 namespace QuickDns;
 
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use Symfony\Component\DomCrawler\Crawler;
@@ -106,25 +107,19 @@ class QuickDns
      */
     public function getTemplates()
     {
-        $templates = [];
         $response = $this->request('templates', QuickDns::METHOD_GET);
-        $html = new Crawler($response);
-        foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
-            $template_data = [str_replace('/edittemplate?id=', '', $node->firstChild->firstChild->getAttribute('href'))];
-            foreach($node->getElementsByTagName('td') as $td) {
-                $template_data[] = trim($td->nodeValue);
-            }
-
-            //Generate template
-            $template = new Template($this, $template_data[1]);
-            $template->id = $template_data[0];
-            $template->name = $template_data[1];
-            $template->zones = $template_data[2];
-            $template->groups = $template_data[3]=='Ingen' ? [] : explode(', ', $template_data[3]);
-            $template->updated = $template_data[4];
-            $templates[] = $template;
-        }
-        return $templates;
+        return (new Crawler($response))
+            ->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]')
+            ->each(function(Crawler $tr) {
+                preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
+                $template = new Template($this, $tr->filterXPath('//td[1]')->text());
+                $template->id = (int) $match[1];
+                $template->name = $tr->filterXPath('//td[1]')->text();
+                $template->zones = (int) $tr->filterXPath('//td[2]')->text();
+                $template->groups = $tr->filterXPath('//td[3]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[3]')->text());
+                $template->updated = Carbon::parse((int) $tr->filterXPath('//td[4]')->text());
+                return $template;
+            });
     }
 
     /**
@@ -148,25 +143,21 @@ class QuickDns
      */
     public function getGroups()
     {
-        $groups = [];
         $response = $this->request('groups', QuickDns::METHOD_GET);
-        $html = new Crawler($response);
-        foreach ($html->filterXPath('//table[@id="group_table"]/tr[not(@class="listheader")]') as $node) {
-            if ($node->firstChild->nodeValue=='Gruppe') {continue;}
-            $group_data = [str_replace(['groupid = ', '; del(parentNode.parentNode.rowIndex);'], '', $node->lastChild->previousSibling->firstChild->getAttribute('onclick'))];
-            foreach($node->getElementsByTagName('td') as $td) {
-                $group_data[] = trim($td->nodeValue);
-            }
-
-            //Generate group
-            $group = new Group($this, $group_data[1]);
-            $group->id = $group_data[0];
-            $group->name = $group_data[1];
-            $group->members = $group_data[2]=='Ingen' ? [] : explode(', ', $group_data[2]);
-            $group->updated = $group_data[3];
-            $groups[] = $group;
-        }
-        return $groups;
+        return (new Crawler($response))
+            ->filterXPath('//table[@id="group_table"]/tr')
+            ->each(function(Crawler $tr) {
+                if (str_contains($tr->html(), 'listheader')) {
+                    return;
+                }
+                preg_match('/\w+\s\=\s(\d+)\;.+/m', $tr->filterXPath('//td[2]/a')->attr('onclick'), $match);
+                $group = new Group($this, $tr->filterXPath('//td[1]')->text());
+                $group->id = (int) $match[1];
+                $group->name = $tr->filterXPath('//td[1]')->text();
+                $group->members = $tr->filterXPath('//td[2]')->text()=='Ingen' ? [] : explode(', ', $$tr->filterXPath('//td[2]')->text());
+                $group->updated = $tr->filterXPath('//td[3]')->text();
+                return $group;
+            });
     }
 
     /**
@@ -186,12 +177,13 @@ class QuickDns
 
     /**
      * Request the API
-     * @param $function
+     * @param string $function
      * @param array $options
      * @param string $method
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return string
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function request($function, $options = [], $method = self::METHOD_GET)
+    public function request($function, $options = [], $method = self::METHOD_GET): string
     {
         if (!empty($options)) {
             if ($method == self::METHOD_POST) {
@@ -201,6 +193,9 @@ class QuickDns
             }
         }
         $response = $this->client->request($method, $function, $options);
+
+//        var_dump($response->getStatusCode(),$response->getBody()->getContents());
+
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());
     }

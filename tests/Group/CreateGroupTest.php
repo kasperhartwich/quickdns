@@ -5,7 +5,7 @@ use QuickDns\Group;
 use Tests\TestCase;
 use QuickDns\QuickDns;
 
-class CreateGroupTest extends TestCase
+final class CreateGroupTest extends TestCase
 {
     public function testCreateSuccess()
     {

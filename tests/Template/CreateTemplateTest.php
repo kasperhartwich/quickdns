@@ -21,8 +21,8 @@ class CreateTemplateTest extends TestCase
         $this->expectExceptionMessage('Skabelonen eksisterer allerede');
 
         $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
-        $temnplate = new Template($quickDns, 'quickdns-api-template');
-        $temnplate->create();
+        $template = new Template($quickDns, 'quickdns-api-template');
+        $template->create();
     }
 
     public function testCreateIllegalTemplateName()
@@ -31,8 +31,8 @@ class CreateTemplateTest extends TestCase
         $this->expectExceptionMessage('Skabelonens navn er ugyldigt');
 
         $quickDns = new QuickDns($this->apiEmail, $this->apiPassword);
-        $temnplate = new Template($quickDns, '@@');
-        $temnplate->create();
+        $template = new Template($quickDns, '@@');
+        $template->create();
     }
 }
 

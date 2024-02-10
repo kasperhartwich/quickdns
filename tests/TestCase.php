@@ -10,7 +10,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
     protected $apiEmail;
     protected $apiPassword;
 
-    public function setUp()
+    protected function setUp(): void
     {
         if (!getenv('QUICKDNS_EMAIL')) {
             throw new \Exception('ENV variables is not set. See documentation,.');
