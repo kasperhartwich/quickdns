@@ -5,7 +5,7 @@
 For how to use, take a look at the tests for now. This is work-in-progress.
 
 ## Requirements
-* PHP 8.1
+* PHP 8.1 or later
 
 ## Installation
 

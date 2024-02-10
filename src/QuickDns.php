@@ -2,7 +2,6 @@
 
 namespace QuickDns;
 
-use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use Symfony\Component\DomCrawler\Crawler;
@@ -127,7 +126,7 @@ class QuickDns
                 $template->name = $tr->filterXPath('//td[1]')->text();
                 $template->zones = (int) $tr->filterXPath('//td[2]')->text();
                 $template->groups = $tr->filterXPath('//td[3]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[3]')->text());
-                $template->updated = Carbon::parse((int) $tr->filterXPath('//td[4]')->text());
+                $template->updated = $tr->filterXPath('//td[4]')->text();
 
                 return $template;
             });
