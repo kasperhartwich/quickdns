@@ -33,7 +33,7 @@ class Template extends BaseModel
     /**
      * Create Template
      *
-     * @return bool
+     * @return $this
      */
     public function create()
     {
@@ -45,7 +45,7 @@ class Template extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 
     /**
@@ -73,7 +73,7 @@ class Template extends BaseModel
      * Add Zone to template
      * TODO: Support multiple templates
      *
-     * @return bool
+     * @return $this
      */
     public function addZone(Zone $zone)
     {
@@ -86,14 +86,14 @@ class Template extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 
     /**
      * Add Zone to template
      * TODO: Support multiple templates
      *
-     * @return bool
+     * @return $this
      */
     public function removeZone(Zone $zone)
     {
@@ -105,6 +105,6 @@ class Template extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 }

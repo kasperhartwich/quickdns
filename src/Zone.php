@@ -34,7 +34,7 @@ class Zone extends BaseModel
      * Create Zone
      *
      * @param  bool  $get_data
-     * @return bool
+     * @return $this
      */
     public function create($get_data = false)
     {
@@ -47,7 +47,7 @@ class Zone extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 
     /**

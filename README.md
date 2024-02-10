@@ -5,7 +5,7 @@
 For how to use, take a look at the tests for now. This is work-in-progress.
 
 ## Requirements
-* PHP 8.1 or later
+* PHP 8.2 or later
 
 ## Installation
 
@@ -48,8 +48,6 @@ echo 'Done' . PHP_EOL;
 ### Testing
 To test, you need to specify email and password for a account at QuickDNS as environment variables.
 You can do so by setting the variables in phpunit.xml file.
-
-You also need to create the template and group `test-template` and `test-group` on your account.
 
 ### License
 Licensed under MIT License.

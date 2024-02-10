@@ -156,7 +156,7 @@ class QuickDns
     {
         $response = $this->request('groups', QuickDns::METHOD_GET);
 
-        return (new Crawler($response))
+        return array_filter((new Crawler($response))
             ->filterXPath('//table[@id="group_table"]/tr')
             ->each(function (Crawler $tr) {
                 if (str_contains($tr->html(), 'listheader')) {
@@ -170,7 +170,7 @@ class QuickDns
                 $group->updated = $tr->filterXPath('//td[3]')->text();
 
                 return $group;
-            });
+            }));
     }
 
     /**
@@ -207,8 +207,6 @@ class QuickDns
             }
         }
         $response = $this->client->request($method, $function, $options);
-
-        //        var_dump($response->getStatusCode(),$response->getBody()->getContents());
 
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());

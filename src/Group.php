@@ -30,7 +30,7 @@ class Group extends BaseModel
     /**
      * Create Group
      *
-     * @return bool
+     * @return $this
      */
     public function create()
     {
@@ -42,7 +42,7 @@ class Group extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 
     /**
@@ -70,7 +70,7 @@ class Group extends BaseModel
      * Add Zone to group
      * TODO: Support multiple groups
      *
-     * @return bool
+     * @return $this
      */
     public function addZone(Zone $zone)
     {
@@ -83,14 +83,14 @@ class Group extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 
     /**
      * Add Zone to group
      * TODO: Support multiple groups
      *
-     * @return bool
+     * @return $this
      */
     public function removeZone(Zone $zone)
     {
@@ -102,6 +102,6 @@ class Group extends BaseModel
             throw new \InvalidArgumentException($xml->statustext);
         }
 
-        return true;
+        return $this;
     }
 }
