@@ -34,13 +34,9 @@ class Group extends BaseModel
      */
     public function create()
     {
-        $response = $this->quickdns->request('addgroup', [
+        $this->quickdns->command('addgroup', [
             'group' => $this->name,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }
@@ -55,13 +51,9 @@ class Group extends BaseModel
         if (! $this->id) {
             throw new \BadFunctionCallException('Group is not created yet.');
         }
-        $response = $this->quickdns->request('delgroup', [
+        $this->quickdns->command('delgroup', [
             'id' => $this->id,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return true;
     }
@@ -74,14 +66,10 @@ class Group extends BaseModel
      */
     public function addZone(Zone $zone)
     {
-        $response = $this->quickdns->request('updategroups', [
+        $this->quickdns->command('updategroups', [
             'zone' => $zone->id,
             'group' => $this->id,
         ]);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }
@@ -94,13 +82,9 @@ class Group extends BaseModel
      */
     public function removeZone(Zone $zone)
     {
-        $response = $this->quickdns->request('updategroups', [
+        $this->quickdns->command('updategroups', [
             'zone' => $zone->id,
         ]);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }

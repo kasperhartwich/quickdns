@@ -38,14 +38,10 @@ class Zone extends BaseModel
      */
     public function create($get_data = false)
     {
-        $response = $this->quickdns->request('addzone', [
+        $this->quickdns->command('addzone', [
             'zone' => $this->domain,
             'getdata' => $get_data ? 1 : 0,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }
@@ -60,13 +56,9 @@ class Zone extends BaseModel
         if (! $this->id) {
             throw new \BadFunctionCallException('Zone is not created yet.');
         }
-        $response = $this->quickdns->request('delzone', [
+        $this->quickdns->command('delzone', [
             'id' => $this->id,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return true;
     }

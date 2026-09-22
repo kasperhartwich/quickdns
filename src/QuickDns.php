@@ -5,6 +5,7 @@ namespace QuickDns;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJar;
+use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
@@ -190,6 +191,34 @@ class QuickDns
             }
         }
         throw new NotFound('Unknown group');
+    }
+
+    /**
+     * Run a QuickDNS command (addzone, delzone, updatetemplates, ...) and return its XML answer,
+     * <response><status>OK</status><statustext>...</statustext>...</response>.
+     *
+     * @param  string  $function
+     * @param  array  $options
+     * @param  string  $method
+     *
+     * @throws CommandFailed when QuickDNS answers ERROR, with QuickDNS' statustext as message
+     * @throws UnrecognisedPage when the answer is not a command response
+     */
+    public function command($function, $options = [], $method = self::METHOD_GET): Crawler
+    {
+        $xml = new Crawler();
+        $xml->addXmlContent($this->request($function, $options, $method));
+
+        $status = $xml->filterXPath('//response/status');
+        if (! $status->count()) {
+            throw new UnrecognisedPage('Unexpected response to '.$function);
+        }
+        if (trim($status->text()) !== 'OK') {
+            $statustext = $xml->filterXPath('//response/statustext');
+            throw new CommandFailed($statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()));
+        }
+
+        return $xml;
     }
 
     /**
