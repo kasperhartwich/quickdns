@@ -53,7 +53,7 @@ class Group extends BaseModel
     public function delete()
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Template is not created yet.');
+            throw new \BadFunctionCallException('Group is not created yet.');
         }
         $response = $this->quickdns->request('delgroup', [
             'id' => $this->id,
