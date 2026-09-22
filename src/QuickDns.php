@@ -3,6 +3,7 @@
 namespace QuickDns;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJar;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -30,17 +31,17 @@ class QuickDns
      *
      * @param  string  $email
      * @param  string  $password
+     * @param  ClientInterface|null  $client  Guzzle client to send requests with, e.g. one with your own
+     *                                        middleware or a MockHandler. The session cookies are kept
+     *                                        by QuickDns, so the client needs no cookie jar.
      */
-    public function __construct($email, $password)
+    public function __construct($email, $password, ?ClientInterface $client = null)
     {
         $this->email = $email;
         $this->password = $password;
 
         $this->cookieJar = new CookieJar();
-        $this->client = new Client([
-            'base_uri' => $this->base_uri,
-            'cookies' => $this->cookieJar,
-        ]);
+        $this->client = $client ?? new Client();
         if (! $this->login()) {
             throw new \InvalidArgumentException('Login failed.');
         }
@@ -199,14 +200,15 @@ class QuickDns
      */
     public function request($function, $options = [], $method = self::METHOD_GET): string
     {
-        if (! empty($options)) {
-            if ($method == self::METHOD_POST) {
-                $options = ['form_params' => $options];
-            } else {
-                $options = ['query' => $options];
-            }
+        if (empty($options)) {
+            $options = [];
+        } elseif ($method == self::METHOD_POST) {
+            $options = ['form_params' => $options];
+        } else {
+            $options = ['query' => $options];
         }
-        $response = $this->client->request($method, $function, $options);
+        $options['cookies'] = $this->cookieJar;
+        $response = $this->client->request($method, $this->base_uri.$function, $options);
 
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());

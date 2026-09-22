@@ -2,6 +2,13 @@
 
 namespace QuickDns\Tests\Unit;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
+use QuickDns\QuickDns;
+
 final class QuickDnsTest extends TestCase
 {
     public function test_login_posts_credentials()
@@ -10,9 +17,31 @@ final class QuickDnsTest extends TestCase
 
         $request = $this->history[0]['request'];
         $this->assertSame('POST', $request->getMethod());
-        $this->assertSame('login', $request->getUri()->getPath());
+        $this->assertSame('https://www.quickdns.dk/login', (string) $request->getUri());
         parse_str((string) $request->getBody(), $form);
         $this->assertSame(['email' => 'test@example.dk', 'password' => 'secret'], $form);
+    }
+
+    public function test_session_cookie_is_kept_with_an_injected_client()
+    {
+        $stack = HandlerStack::create(new MockHandler([
+            new Response(200, ['Set-Cookie' => 'PHPSESSID=abc; path=/'], $this->fixture('login-ok')),
+            $this->response('zones'),
+        ]));
+        $stack->push(Middleware::history($this->history));
+
+        (new QuickDns('test@example.dk', 'secret', new Client(['handler' => $stack])))->getZones();
+
+        $this->assertSame('PHPSESSID=abc', $this->history[1]['request']->getHeaderLine('Cookie'));
+    }
+
+    public function test_login_failed_from_constructor()
+    {
+        $stack = HandlerStack::create(new MockHandler([$this->response('login-failed')]));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Login failed.');
+        new QuickDns('test@example.dk', 'wrong', new Client(['handler' => $stack]));
     }
 
     public function test_login_failed()
