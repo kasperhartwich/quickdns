@@ -104,6 +104,11 @@ final class QuickDnsTest extends TestCase
         $this->assertSame([], $groups[0]->members);
     }
 
+    public function test_get_groups_keeps_its_2_2_keys()
+    {
+        $this->assertSame([1], array_keys($this->quickDns(['groups'])->getGroups()));
+    }
+
     public function test_get_group_by_name()
     {
         $this->assertSame(738, $this->quickDns(['groups'])->getGroup('test-group')->id);

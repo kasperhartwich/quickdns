@@ -134,8 +134,7 @@ class QuickDns
     public function getZones()
     {
         $zones = [];
-        $html = $this->page('zones');
-        foreach ($html->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]') as $node) {
+        foreach ($this->listRows('zones', 'zone_table') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
                 $zone_data[] = trim($td->nodeValue);
@@ -169,14 +168,63 @@ class QuickDns
     }
 
     /**
+     * Get the records of a zone, in the order QuickDNS lists them.
+     *
+     * @param  Zone|int|string  $zone  A zone or its id
+     * @return Record[]
+     *
+     * @throws UnrecognisedPage when the page has no record table
+     */
+    public function getRecords($zone): array
+    {
+        $id = $zone instanceof Zone ? $zone->id : $zone;
+        if (! $id) {
+            throw new \BadFunctionCallException('Zone is not created yet.');
+        }
+
+        // The zones list uses the same table id; only the record table has the class "records".
+        $table = $this->page('editzone', ['id' => $id])
+            ->filterXPath('//table[@id="zone_table" and contains(concat(" ", normalize-space(@class), " "), " records ")]');
+        if (! $table->count()) {
+            throw new UnrecognisedPage('No record table on the zone page for zone '.$id);
+        }
+
+        $records = [];
+        // Count every row, header and separators included: that is the row number QuickDNS uses.
+        foreach ($table->filterXPath('.//tr') as $row => $tr) {
+            $cells = $tr->getElementsByTagName('td');
+            if ($cells->length < 5) {
+                continue;
+            }
+            $text = fn (int $i) => trim($cells->item($i)->textContent);
+            $title = $cells->item(4)->getAttribute('title');
+            $template = null;
+            if ($cells->length > 5 && preg_match('/skabelonen "([^"]*)"/', $cells->item(5)->getAttribute('title'), $match)) {
+                $template = $match[1];
+            }
+            $records[] = new Record(
+                $text(0),
+                $text(2),
+                $text(1) === '' ? null : (int) $text(1),
+                $text(3) === '' ? null : (int) $text(3),
+                // The cell may shorten a long value; the title holds all of it.
+                $title !== '' ? trim($title) : $text(4),
+                $row,
+                $template,
+            );
+        }
+
+        return $records;
+    }
+
+    /**
      * Get Templates
      *
      * @return array
      */
     public function getTemplates()
     {
-        return $this->page('templates')
-            ->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]')
+        return $this->listRows('templates', 'zone_table')
             ->each(function (Crawler $tr) {
                 preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
                 $template = new Template($this, $tr->filterXPath('//td[1]')->text());
@@ -212,12 +260,8 @@ class QuickDns
      */
     public function getGroups()
     {
-        return array_filter($this->page('groups')
-            ->filterXPath('//table[@id="group_table"]//tr')
+        $groups = $this->listRows('groups', 'group_table')
             ->each(function (Crawler $tr) {
-                if (str_contains($tr->html(), 'listheader')) {
-                    return;
-                }
                 preg_match('/\w+\s\=\s(\d+)\;.+/m', $tr->filterXPath('//td[2]/a')->attr('onclick'), $match);
                 $group = new Group($this, $tr->filterXPath('//td[1]')->text());
                 $group->id = (int) $match[1];
@@ -226,7 +270,10 @@ class QuickDns
                 $group->updated = $tr->filterXPath('//td[3]')->text();
 
                 return $group;
-            }));
+            });
+
+        // 2.2 filtered the header row out of the list, so its keys start at 1. Keep them.
+        return $groups ? array_combine(range(1, count($groups)), $groups) : [];
     }
 
     /**
@@ -247,19 +294,32 @@ class QuickDns
     /**
      * Fetch one of QuickDNS' HTML pages.
      *
-     * A page without a list table is an empty list (QuickDNS leaves the table out when there are no
-     * zones), so the only reliable sign of a wrong page is that it is not a logged-in page.
-     *
      * @throws UnrecognisedPage when the answer is not a logged-in QuickDNS page
      */
-    protected function page(string $function): Crawler
+    protected function page(string $function, array $options = []): Crawler
     {
-        $response = $this->request($function);
+        $response = $this->request($function, $options);
         if (! str_contains($response, 'Log ud')) {
             throw new UnrecognisedPage('Unexpected page at '.$function.': not logged in');
         }
 
         return new Crawler($response);
+    }
+
+    /**
+     * The rows of a list page's table, header rows excluded. QuickDNS always shows the table, with
+     * only its header when the list is empty, so a missing table means an unexpected page.
+     *
+     * @throws UnrecognisedPage when the page has no such table
+     */
+    private function listRows(string $function, string $tableId): Crawler
+    {
+        $table = $this->page($function)->filterXPath('//table[@id="'.$tableId.'"]');
+        if (! $table->count()) {
+            throw new UnrecognisedPage('No '.$tableId.' on the '.$function.' page');
+        }
+
+        return $table->filterXPath('.//tr[not(@class="listheader") and not(.//th)]');
     }
 
     /**

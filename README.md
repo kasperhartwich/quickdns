@@ -65,6 +65,18 @@ $zone->delete();
 $quickDns->getZone('example.dk')->delete();
 ```
 
+### Records
+
+```php
+foreach ($quickDns->getZone('example.dk')->getRecords() as $record) {
+    echo $record->name, ' ', $record->type, ' ', $record->value, PHP_EOL;  // @ MX mx1.example.dk.
+}
+```
+
+Each `QuickDns\Record` has `name` (as QuickDNS shows it: `@`, `www`, `*`), `type`, `ttl` and
+`priority` (`null` when blank), `value`, `row` (the record's row on the zone page) and `template`
+(the template that added the record, or `null`). Records cannot be created or changed yet.
+
 ### Templates and groups
 
 ```php
