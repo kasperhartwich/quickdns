@@ -32,7 +32,10 @@ class QuickDns
 
     private $loggingIn = false;
 
-    private static $constructLazily = false;
+    /**
+     * The class lazy() is constructing, or null.
+     */
+    private static $constructLazily = null;
 
     const METHOD_POST = 'POST';
 
@@ -50,8 +53,8 @@ class QuickDns
     public function __construct($email, $password, ?ClientInterface $client = null)
     {
         $this->configure($email, $password, $client);
-        if (self::$constructLazily) {
-            self::$constructLazily = false;
+        if (self::$constructLazily === static::class) {
+            self::$constructLazily = null;
 
             return;
         }
@@ -69,11 +72,12 @@ class QuickDns
     public static function lazy($email, $password, ?ClientInterface $client = null): static
     {
         // Go through the constructor, so a subclass' own constructor still runs.
-        self::$constructLazily = true;
+        // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy.
+        self::$constructLazily = static::class;
         try {
             return new static($email, $password, $client);
         } finally {
-            self::$constructLazily = false;
+            self::$constructLazily = null;
         }
     }
 

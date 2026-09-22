@@ -74,6 +74,36 @@ final class LazyTest extends TestCase
         $this->assertSame([], $this->history);
     }
 
+    public function test_quickdns_built_inside_a_subclass_constructor_is_not_lazy()
+    {
+        $innerHistory = [];
+        $inner = HandlerStack::create(new MockHandler([$this->response('login-ok'), $this->response('login-ok')]));
+        $inner->push(Middleware::history($innerHistory));
+        $class = get_class(new class('a', 'b', new Client(['handler' => HandlerStack::create(new MockHandler([$this->response('login-ok')]))])) extends QuickDns
+        {
+            public static $innerClient;
+
+            public $inner;
+
+            public function __construct($email, $password, $client = null)
+            {
+                if (self::$innerClient) {
+                    $this->inner = new QuickDns($email, $password, self::$innerClient);
+                }
+                parent::__construct($email, $password, $client);
+            }
+        });
+        $class::$innerClient = new Client(['handler' => $inner]);
+        $outer = HandlerStack::create(new MockHandler([]));
+        $outer->push(Middleware::history($this->history));
+
+        $quickDns = $class::lazy('a', 'b', new Client(['handler' => $outer]));
+
+        $this->assertCount(1, $innerHistory, 'The inner QuickDns logs in right away.');
+        $this->assertSame([], $this->history, 'The lazy outer one sends nothing.');
+        $this->assertInstanceOf(QuickDns::class, $quickDns->inner);
+    }
+
     public function test_constructor_after_lazy_logs_in_again()
     {
         QuickDns::lazy('a', 'b');
