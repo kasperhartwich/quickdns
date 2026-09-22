@@ -221,8 +221,9 @@ class QuickDns
      */
     public function command($function, $options = [], $method = self::METHOD_GET): Crawler
     {
+        // Parse the raw body: its XML declaration tells libxml the encoding (ISO-8859-1).
         $xml = new Crawler();
-        $xml->addXmlContent($this->request($function, $options, $method));
+        $xml->addXmlContent($this->send($function, $options, $method));
 
         $status = $xml->filterXPath('//response/status');
         if (! $status->count()) {
