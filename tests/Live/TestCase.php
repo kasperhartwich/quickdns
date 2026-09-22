@@ -1,6 +1,6 @@
 <?php
 
-namespace QuickDns\Tests;
+namespace QuickDns\Tests\Live;
 
 use QuickDns\Group;
 use QuickDns\QuickDns;
@@ -18,7 +18,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
 
     protected $testTemplate = 'test-template';  // Need to exist before running tests
 
-    protected $testDomain = 'quickdns-api-test-domain.dk';
+    protected $testDomain = 'flyvende-agurk-pingvin.dk';
 
     protected function setUp(): void
     {
