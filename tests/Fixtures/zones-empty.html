@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>QuickDNS.dk - Mine zoner</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="/default.css" />
+<script type="text/javascript" src="/js/misc.js"></script>
+<script type="text/javascript" src="/js/layout.js"></script>
+<!--[if lt IE 7]><script type="text/javascript" src="/js/lt7.js"></script><![endif]-->
+<script type="text/javascript" src="/js/zones.js"></script>
+<script type="text/javascript" src="/js/pagination.js"></script>
+
+</head><body onload="fix_layout(); zones_init(); delegation_status();">
+<div class="topleft" id="topdiv">
+	<div id="notification"></div>
+	<a href="/"><img src="/gfx/toplogo.png" alt="QuickDNS" /></a>
+</div>
+<div class="page" id="pagediv">
+	<div class="menu" id="menu">
+		<p>
+			<a href="/">Velkommen</a><br />
+			<a href="/about">Om QuickDNS</a><br />
+			<a href="/guides">Vejledninger</a><br />
+			<a href="/faq">Spørgsmål og svar</a><br />
+			<a href="/glossary">Ordforklaring</a><br />
+			<a href="/forum">Forum</a><br />
+			<a href="/contact">Kontakt</a><br />
+		</p>
+		<div class="line"></div>
+<p>
+<a href="/zones">DNS</a><br />
+
+<a href="/logout">Log ud</a><br />
+</p>
+
+	</div>
+	<div class="content" id="contentdiv">
+		<div class="contentinner">
+			<div id="tabbar">
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabactive">
+    &nbsp;<a href="/zones">Zoner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/templates">Skabeloner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/groups">Grupper</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/search">Søg</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/settings">Indstillinger</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+</div>
+
+
+
+<div id="zones">
+  <table class="listtable" id="zone_table">
+    <tr class="listheader">
+      <th class="listheader">&nbsp;</th>
+      <th class="listheader"><a href="/zones?grouping=alphabetical">Zone</a></th>
+      <th class="listheader"><a href="/zones?grouping=template">Skabeloner</a></th>
+      <th class="listheader"><a href="/zones?grouping=group">Grupper</a></th>
+      <th class="listheader">Opdateret</th>
+      <th class="listheader">Slet</th>
+    </tr>
+
+
+  </table>
+  
+
+<br />
+
+  <div id="addbox">
+    <form id="addform" onsubmit="addzone_submit(false); return false;">
+      <table>
+	<tr><td>Zone:</td><td><input type="text" name="zone"></td></tr>
+	<tr><td colspan="2"><input type="checkbox" name="getdata" value="1"> Hent data fra nuværende navneserver:</tr>
+	<tr><td colspan="2"><input type="button" value="Opret zone" onclick="addzone_submit(false);">&nbsp;<span id="addzonestatus"></span></td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="deletebox">
+    <form id="deleteform" onSubmit="submit_delete(); return false;">
+      <input type="hidden" name="row" />
+      <table>
+	<tr><td colspan="2">
+	    Ønsker du at slette denne zone?
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Ja" onclick="delzone_submit(false);" />
+	    <input type="button" value="Nej" onclick="cancel_delete();" />
+	  </td><td>
+	    <span id="delzonestatus"></span>
+	</td></tr>
+	</table>
+    </form>
+  </div>
+
+  <div id="templatesbox">
+    <form id="templatesform" onsubmit="templates_submit(); return false;">
+      <table>
+	<tr><td>Skabeloner tilknyttet denne zone:</td></tr>
+	<tr><td>
+      <input type="checkbox" id="templatecheckbox17284" value="1">test-template</input><br />
+
+	</td></tr>
+	<tr><td><a href="javascript:void(0);" onclick="toggle_global_templates_select();">Globale skabeloner</a></td></tr>
+	<tr id="global_templates_select" style="display:none"><td>
+      <input type="checkbox" id="templatecheckbox840" value="1">Google Talk</input><br />
+      <input type="checkbox" id="templatecheckbox316" value="1">Google mail</input><br />
+
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="templates_submit();" />
+	    <input type="button" value="Annullér" onclick="cancel_templates();" />
+	</td></tr>
+      </table>
+      <span id="templatesstatus"></span>
+    </form>
+  </div>
+
+  <div id="renamebox">
+    <form id="renameform" onsubmit="rename_submit(); return false;">
+      <table>
+	<tr><td>
+	    Omdøb skabelon:
+	  </td><td>
+	    <input type="text" id="name" />
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="rename_submit();" />
+	    <input type="button" value="Annullér" onclick="cancel_rename();" />
+	  </td><td>
+	    <span id="renamestatus"></span>
+	</td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="groupsbox">
+    <form id="groupsform" onsubmit="groups_submit(false); return false;">
+      <table>
+	<tr><td>Grupper der kan rette denne zone:</td></tr>
+	<tr><td>
+      <input type="checkbox" id="groupcheckbox738" value="1">test-group</input><br />
+
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="groups_submit(false);" />
+	    <input type="button" value="Annullér" onclick="cancel_groups();" />
+	</td></tr>
+      </table>
+      <span id="groupsstatus"></span>
+    </form>
+  </div>
+
+</div>
+
+
+		</div>
+		<div class="footer">
+			<table width="100%"><tr>
+				<td class="top">&copy;&nbsp;2008 - 2026&nbsp;QuickDNS.dk</td>
+				<td class="right"></td>
+			</tr></table>
+		</div>
+	</div>
+</div>
+</body></html>
