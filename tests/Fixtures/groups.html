@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>QuickDNS.dk - Mine grupper</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="/default.css" />
+<script type="text/javascript" src="/js/misc.js"></script>
+<script type="text/javascript" src="/js/layout.js"></script>
+<!--[if lt IE 7]><script type="text/javascript" src="/js/lt7.js"></script><![endif]-->
+<script type="text/javascript" src="/js/groups.js"></script>
+<script type="text/javascript">
+  function init_groupmembers () {
+    groupmembers = {738: []};
+  }
+</script>
+
+</head><body onload="fix_layout(); groups_init();">
+<div class="topleft" id="topdiv">
+	<div id="notification"></div>
+	<a href="/"><img src="/gfx/toplogo.png" alt="QuickDNS" /></a>
+</div>
+<div class="page" id="pagediv">
+	<div class="menu" id="menu">
+		<p>
+			<a href="/">Velkommen</a><br />
+			<a href="/about">Om QuickDNS</a><br />
+			<a href="/guides">Vejledninger</a><br />
+			<a href="/faq">Spørgsmål og svar</a><br />
+			<a href="/glossary">Ordforklaring</a><br />
+			<a href="/forum">Forum</a><br />
+			<a href="/contact">Kontakt</a><br />
+		</p>
+		<div class="line"></div>
+<p>
+<a href="/zones">DNS</a><br />
+
+<a href="/logout">Log ud</a><br />
+</p>
+
+	</div>
+	<div class="content" id="contentdiv">
+		<div class="contentinner">
+			<div id="tabbar">
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/zones">Zoner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/templates">Skabeloner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabactive">
+    &nbsp;<a href="/groups">Grupper</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/search">Søg</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/settings">Indstillinger</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+</div>
+
+
+<div id="zones">
+  <table class="listtable" id="group_table">
+    <tr>
+      <th class="listheader">Gruppe</th>
+      <th class="listheader">Medlemmer</th>
+      <th class="listheader">Ret</th>
+      <th class="listheader">Slet</th>
+    </tr>
+  <tr class="listrow2">
+    <td class="listrow2">test-group</td>
+    <td class="listrow2"><a href="javascript:void(0);"
+			    onmouseover="show_members(738, parentNode.parentNode.rowIndex);"
+			    onmouseout="hide_members(parentNode.parentNode.rowIndex);"
+			    onclick="groupid = 738; edit_members(parentNode.parentNode.rowIndex);">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="groupid = 738; rename(parentNode.parentNode.rowIndex);">Ret</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="groupid = 738; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+
+  </table>
+
+  <br />
+
+  <div id="addbox">
+    <form id="addform" onsubmit="addgroup_submit(); return false;">
+      <table>
+	<tr><td>Gruppe:</td><td><input type="text" name="group"></td></tr>
+	<tr><td colspan="2"><input type="button" value="Opret gruppe" onclick="addgroup_submit();">&nbsp;<span id="addgroupstatus"></span></td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="deletebox">
+    <form id="deleteform" onSubmit="delgroup_submit(); return false;">
+      <input type="hidden" name="row" />
+      <table>
+	<tr><td colspan="2">
+	    Ønsker du at slette denne gruppe?
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Ja" onclick="delgroup_submit();" />
+	    <input type="button" value="Nej" onclick="cancel_delete();" />
+	  </td><td>
+	    <span id="delgroupstatus"></span>
+	</td></tr>
+	</table>
+    </form>
+  </div>
+
+  <div id="renamebox">
+    <form id="renameform" onsubmit="rename_submit(); return false;">
+      <table>
+	<tr><td>
+	    Omdøb gruppe:
+	  </td><td>
+	    <input type="text" id="name" />
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="rename_submit();" />
+	    <input type="button" value="Annullér" onclick="cancel_rename();" />
+	  </td><td>
+	    <span id="renamestatus"></span>
+	</td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="membersbox">
+    <form id="membersform" onsubmit="addmember(); return false;">
+      <input type="hidden" name="row" value="1" />
+      <table id="memberstable" class="listtable">
+	<tr class="listseparator"><th class="listseparator" colspan="3">
+	    Medlemmer af gruppen:
+	</th></tr>
+	<tr class="listseparator">
+	  <th class="listseparator" colspan="3">Nyt medlem</th>
+	</tr>
+	<tr class="listrow1">
+	  <td class="listrow1">
+	    Navn:
+	  </td><td class="listrow1">
+	    <input type="text" id="name" size="30">
+	  </td>
+	  <td class="listrow1">&nbsp;</td>
+	</tr>
+	<tr class="listrow1"><td class="listrow1">
+	    Email-adresse: 
+	  </td><td class="listrow1">
+	    <input type="text" id="email" size="30">
+	  </td>
+	  <td class="listrow1">&nbsp;</td>
+	</tr>
+	<tr class="listrow1">
+	  <td colspan="3" class="listrow1">
+	    <input type="button" value="Tilføj medlem" onclick="addmember();" />
+	    <input type="button" value="Annullér" onclick="cancel_edit_members();" />
+	    <span id="addmemberstatus"></span>
+	</td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="deletebox2">
+    <form id="deleteform2" onSubmit="delmember_submit(); return false;">
+      <input type="hidden" name="row" />
+      <table>
+	<tr><td colspan="2">
+	    Ønsker du at slette dette medlem?
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Ja" onclick="delmember_submit();" />
+	    <input type="button" value="Nej" onclick="cancel_deletemember();" />
+	  </td><td>
+	    <span id="delmemberstatus"></span>
+	</td></tr>
+      </table>
+    </form>
+  </div>
+</div>
+
+
+		</div>
+		<div class="footer">
+			<table width="100%"><tr>
+				<td class="top">&copy;&nbsp;2008 - 2026&nbsp;QuickDNS.dk</td>
+				<td class="right"></td>
+			</tr></table>
+		</div>
+	</div>
+</div>
+</body></html>

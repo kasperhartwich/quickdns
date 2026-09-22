@@ -1,6 +1,6 @@
 <?php
 
-namespace QuickDns\Tests;
+namespace QuickDns\Tests\Live;
 
 use QuickDns\QuickDns;
 

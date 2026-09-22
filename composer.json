@@ -30,6 +30,7 @@
     }
   },
   "scripts": {
-    "test": "vendor/bin/phpunit"
+    "test": "vendor/bin/phpunit --testsuite Unit",
+    "test:live": "vendor/bin/phpunit --testsuite Live"
   }
 }

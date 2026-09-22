@@ -1,6 +1,6 @@
 <?php
 
-namespace QuickDns\Tests;
+namespace QuickDns\Tests\Live;
 
 use QuickDns\Zone;
 
@@ -78,10 +78,10 @@ class ZoneTest extends TestCase
 
     public function test_find_deleted_zone_fail()
     {
-        $this->quickDns->getZone('quickdns-api-test-domain.dk')->delete();
+        $this->quickDns->getZone('flyvende-agurk-pingvin.dk')->delete();
 
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Unknown domain');
-        $this->quickDns->getZone('quickdns-api-test-domain.dk');
+        $this->quickDns->getZone('flyvende-agurk-pingvin.dk');
     }
 }
