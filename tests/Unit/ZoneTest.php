@@ -15,6 +15,7 @@ final class ZoneTest extends TestCase
 
         $this->assertInstanceOf(Zone::class, $zone);
         $this->assertSame('addzone?zone=flyvende-agurk-pingvin.dk&getdata=0', $this->lastRequestUri());
+        $this->assertSame('17286', $zone->id);
     }
 
     public function test_create_with_data()
@@ -49,5 +50,13 @@ final class ZoneTest extends TestCase
         $this->expectException(\BadFunctionCallException::class);
         $this->expectExceptionMessage('Zone is not created yet.');
         $zone->delete();
+    }
+
+    public function test_create_then_delete_without_fetching()
+    {
+        $zone = (new Zone($this->quickDns(['addzone-ok', 'delzone']), 'flyvende-agurk-pingvin.dk'))->create();
+
+        $this->assertTrue($zone->delete());
+        $this->assertSame('delzone?id=17286', $this->lastRequestUri());
     }
 }

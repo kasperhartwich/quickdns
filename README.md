@@ -57,10 +57,11 @@ foreach ($quickDns->getZones() as $zone) {
     echo $zone->domain, ': ', implode(', ', $zone->templates), PHP_EOL;
 }
 
-// Create a zone.
-(new Zone($quickDns, 'example.dk'))->create();
+// Create a zone. create() sets its id, so it can be used right away.
+$zone = (new Zone($quickDns, 'example.dk'))->create();
+$zone->delete();
 
-// Look a zone up by domain, then delete it.
+// Or look a zone up by domain.
 $quickDns->getZone('example.dk')->delete();
 ```
 
@@ -78,7 +79,8 @@ $template->removeZone($zone);
 $group->removeZone($zone);
 ```
 
-`Template` and `Group` also have `create()` and `delete()`, just like `Zone`.
+`Template` and `Group` also have `create()` and `delete()`, just like `Zone`. QuickDNS does not
+answer with a new group's id, so fetch a group with `getGroup()` after creating it.
 
 ### Example: set up several domains from one template
 
@@ -90,10 +92,8 @@ $quickDns = new QuickDns('my@email.example', 'password');
 $template = $quickDns->getTemplate('my-template');
 
 foreach (['domain1.dk', 'domain2.dk', 'domain3.dk'] as $domain) {
-    (new Zone($quickDns, $domain))->create();
-
-    // create() does not return the zone's id yet, so fetch the zone before using it.
-    $template->addZone($quickDns->getZone($domain));
+    $zone = (new Zone($quickDns, $domain))->create();
+    $template->addZone($zone);
 
     echo "{$domain} created and added to {$template->name}", PHP_EOL;
 }

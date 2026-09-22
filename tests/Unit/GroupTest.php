@@ -14,6 +14,7 @@ final class GroupTest extends TestCase
 
         $this->assertInstanceOf(Group::class, $group);
         $this->assertSame('addgroup?group=sjaskende-rabarber', $this->lastRequestUri());
+        $this->assertNull($group->id);
     }
 
     public function test_create_already_exists()
