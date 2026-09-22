@@ -132,6 +132,49 @@ try {
 }
 ```
 
+## Laravel
+
+The service provider is discovered automatically. Set the account in `.env`:
+
+```dotenv
+QUICKDNS_EMAIL=my@email.example
+QUICKDNS_PASSWORD=password
+```
+
+and use `QuickDns\QuickDns` from the container (it logs in on first use), or the facade:
+
+```php
+use QuickDns\Laravel\Facades\QuickDns;
+
+$zones = QuickDns::getZones();
+```
+
+`php artisan vendor:publish --tag=quickdns-config` publishes `config/quickdns.php`, where
+`client` can name a container binding of a `GuzzleHttp\ClientInterface` to send the requests
+with. In tests, `QuickDns::fake()` swaps in a [FakeQuickDns](#testing-your-code) and returns it.
+
+## Symfony
+
+Register the bundle in `config/bundles.php`:
+
+```php
+return [
+    // ...
+    QuickDns\Symfony\QuickDnsBundle::class => ['all' => true],
+];
+```
+
+and configure it in `config/packages/quickdns.yaml`:
+
+```yaml
+quickdns:
+    email: '%env(QUICKDNS_EMAIL)%'
+    password: '%env(QUICKDNS_PASSWORD)%'
+    # client: my_guzzle_client   # optional service id of a GuzzleHttp\ClientInterface
+```
+
+`QuickDns\QuickDns` is then autowirable. It logs in on first use.
+
 ## Testing your code
 
 `QuickDns\Testing\FakeQuickDns` is an in-memory quickdns.dk. It keeps zones, templates, groups
