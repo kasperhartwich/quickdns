@@ -24,12 +24,20 @@ composer require kasperhartwich/quickdns
 
 ## Usage
 
-Creating the client logs in right away. Wrong credentials throw an `InvalidArgumentException`.
+Creating the client logs in right away. Wrong credentials throw `QuickDns\Exceptions\LoginFailed`.
 
 ```php
 use QuickDns\QuickDns;
 
 $quickDns = new QuickDns('my@email.example', 'password');
+```
+
+To send the requests through your own Guzzle client (middleware for logging or rate limiting, or
+a `MockHandler` in tests), pass it as the third argument. QuickDns keeps the login session
+cookies itself, so the client needs no cookie jar:
+
+```php
+$quickDns = new QuickDns('my@email.example', 'password', new \GuzzleHttp\Client(['handler' => $stack]));
 ```
 
 ### Zones
@@ -85,10 +93,24 @@ foreach (['domain1.dk', 'domain2.dk', 'domain3.dk'] as $domain) {
 
 ### Errors
 
-When QuickDNS rejects a command (the zone already exists, an invalid name, ...), an
-`InvalidArgumentException` is thrown with QuickDNS' own message, in Danish, e.g.
-`Zonen eksisterer allerede`. Looking up a zone, template or group that does not exist throws an
-`UnexpectedValueException`.
+Every exception from QuickDNS implements `QuickDns\Exceptions\QuickDnsException`:
+
+| Exception | When | Extends |
+|---|---|---|
+| `LoginFailed` | Wrong email or password | `InvalidArgumentException` |
+| `CommandFailed` | QuickDNS rejected a command. The message is QuickDNS' own, in Danish, e.g. `Zonen eksisterer allerede` | `InvalidArgumentException` |
+| `NotFound` | `getZone()`, `getTemplate()` or `getGroup()` found nothing | `UnexpectedValueException` |
+| `UnrecognisedPage` | QuickDNS answered with something unexpected, e.g. a logged-out page | `UnexpectedValueException` |
+
+```php
+use QuickDns\Exceptions\CommandFailed;
+
+try {
+    (new Zone($quickDns, 'example.dk'))->create();
+} catch (CommandFailed $e) {
+    echo 'QuickDNS said: ', $e->getMessage(), PHP_EOL;
+}
+```
 
 ## Testing
 
