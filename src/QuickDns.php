@@ -166,7 +166,7 @@ class QuickDns
                 $group = new Group($this, $tr->filterXPath('//td[1]')->text());
                 $group->id = (int) $match[1];
                 $group->name = $tr->filterXPath('//td[1]')->text();
-                $group->members = $tr->filterXPath('//td[2]')->text() == 'Ingen' ? [] : explode(', ', $$tr->filterXPath('//td[2]')->text());
+                $group->members = $tr->filterXPath('//td[2]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[2]')->text());
                 $group->updated = $tr->filterXPath('//td[3]')->text();
 
                 return $group;
