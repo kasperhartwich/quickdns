@@ -62,9 +62,9 @@ class QuickDns
             'email' => $this->email,
             'password' => $this->password,
         ], self::METHOD_POST);
-        if (strpos($response, 'Log ud')) {
+        if (str_contains($response, 'Log ud')) {
             return true;
-        } elseif (strpos($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
+        } elseif (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
         }
         throw new UnrecognisedPage('Unknown response at login');
@@ -78,8 +78,7 @@ class QuickDns
     public function getZones()
     {
         $zones = [];
-        $response = $this->request('zones');
-        $html = new Crawler($response);
+        $html = $this->page('zones');
         foreach ($html->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
@@ -120,9 +119,7 @@ class QuickDns
      */
     public function getTemplates()
     {
-        $response = $this->request('templates');
-
-        return (new Crawler($response))
+        return $this->page('templates')
             ->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]')
             ->each(function (Crawler $tr) {
                 preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
@@ -159,9 +156,7 @@ class QuickDns
      */
     public function getGroups()
     {
-        $response = $this->request('groups');
-
-        return array_filter((new Crawler($response))
+        return array_filter($this->page('groups')
             ->filterXPath('//table[@id="group_table"]//tr')
             ->each(function (Crawler $tr) {
                 if (str_contains($tr->html(), 'listheader')) {
@@ -191,6 +186,24 @@ class QuickDns
             }
         }
         throw new NotFound('Unknown group');
+    }
+
+    /**
+     * Fetch one of QuickDNS' HTML pages.
+     *
+     * A page without a list table is an empty list (QuickDNS leaves the table out when there are no
+     * zones), so the only reliable sign of a wrong page is that it is not a logged-in page.
+     *
+     * @throws UnrecognisedPage when the answer is not a logged-in QuickDNS page
+     */
+    protected function page(string $function): Crawler
+    {
+        $response = $this->request($function);
+        if (! str_contains($response, 'Log ud')) {
+            throw new UnrecognisedPage('Unexpected page at '.$function.': not logged in');
+        }
+
+        return new Crawler($response);
     }
 
     /**

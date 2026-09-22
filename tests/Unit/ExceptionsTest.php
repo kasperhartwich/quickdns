@@ -2,6 +2,7 @@
 
 namespace QuickDns\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
@@ -61,5 +62,18 @@ final class ExceptionsTest extends TestCase
         $this->expectException(NotFound::class);
         $this->expectExceptionMessage('Unknown group');
         $this->quickDns(['groups'])->getGroup('findes-ikke');
+    }
+
+    #[DataProvider('listMethods')]
+    public function test_list_on_a_logged_out_page_throws_unrecognised_page(string $method, string $page)
+    {
+        $this->expectException(UnrecognisedPage::class);
+        $this->expectExceptionMessage('Unexpected page at '.$page.': not logged in');
+        $this->quickDns(['login-failed'])->$method();
+    }
+
+    public static function listMethods(): array
+    {
+        return [['getZones', 'zones'], ['getTemplates', 'templates'], ['getGroups', 'groups']];
     }
 }
