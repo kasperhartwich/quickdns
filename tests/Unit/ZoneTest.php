@@ -2,6 +2,7 @@
 
 namespace QuickDns\Tests\Unit;
 
+use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Zone;
 
 final class ZoneTest extends TestCase
@@ -27,7 +28,7 @@ final class ZoneTest extends TestCase
     {
         $zone = new Zone($this->quickDns(['addzone-exists']), 'flyvende-agurk-pingvin.dk');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(CommandFailed::class);
         $this->expectExceptionMessage('Zonen eksisterer allerede');
         $zone->create();
     }

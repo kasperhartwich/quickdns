@@ -37,13 +37,9 @@ class Template extends BaseModel
      */
     public function create()
     {
-        $response = $this->quickdns->request('addtemplate', [
+        $this->quickdns->command('addtemplate', [
             'zone' => $this->name,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }
@@ -58,13 +54,9 @@ class Template extends BaseModel
         if (! $this->id) {
             throw new \BadFunctionCallException('Template is not created yet.');
         }
-        $response = $this->quickdns->request('deltemplate', [
+        $this->quickdns->command('deltemplate', [
             'id' => $this->id,
         ], QuickDns::METHOD_GET);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return true;
     }
@@ -77,14 +69,10 @@ class Template extends BaseModel
      */
     public function addZone(Zone $zone)
     {
-        $response = $this->quickdns->request('updatetemplates', [
+        $this->quickdns->command('updatetemplates', [
             'zone' => $zone->id,
             'template' => $this->id,
         ]);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }
@@ -97,13 +85,9 @@ class Template extends BaseModel
      */
     public function removeZone(Zone $zone)
     {
-        $response = $this->quickdns->request('updatetemplates', [
+        $this->quickdns->command('updatetemplates', [
             'zone' => $zone->id,
         ]);
-        if (strpos($response, 'ERROR')) {
-            $xml = new \SimpleXMLElement($response);
-            throw new \InvalidArgumentException($xml->statustext);
-        }
 
         return $this;
     }

@@ -3,7 +3,14 @@
 namespace QuickDns;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
+use QuickDns\Exceptions\CommandFailed;
+use QuickDns\Exceptions\LoginFailed;
+use QuickDns\Exceptions\NotFound;
+use QuickDns\Exceptions\UnrecognisedPage;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -30,19 +37,19 @@ class QuickDns
      *
      * @param  string  $email
      * @param  string  $password
+     * @param  ClientInterface|null  $client  Guzzle client to send requests with, e.g. one with your own
+     *                                        middleware or a MockHandler. The session cookies are kept
+     *                                        by QuickDns, so the client needs no cookie jar.
      */
-    public function __construct($email, $password)
+    public function __construct($email, $password, ?ClientInterface $client = null)
     {
         $this->email = $email;
         $this->password = $password;
 
         $this->cookieJar = new CookieJar();
-        $this->client = new Client([
-            'base_uri' => $this->base_uri,
-            'cookies' => $this->cookieJar,
-        ]);
+        $this->client = $client ?? new Client();
         if (! $this->login()) {
-            throw new \InvalidArgumentException('Login failed.');
+            throw new LoginFailed('Login failed.');
         }
     }
 
@@ -57,12 +64,12 @@ class QuickDns
             'email' => $this->email,
             'password' => $this->password,
         ], self::METHOD_POST);
-        if (strpos($response, 'Log ud')) {
+        if (str_contains($response, 'Log ud')) {
             return true;
-        } elseif (strpos($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
+        } elseif (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
         }
-        throw new \UnexpectedValueException('Unknown response at login');
+        throw new UnrecognisedPage('Unknown response at login');
     }
 
     /**
@@ -73,8 +80,7 @@ class QuickDns
     public function getZones()
     {
         $zones = [];
-        $response = $this->request('zones');
-        $html = new Crawler($response);
+        $html = $this->page('zones');
         foreach ($html->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
@@ -105,7 +111,7 @@ class QuickDns
                 return $zone;
             }
         }
-        throw new \UnexpectedValueException('Unknown domain');
+        throw new NotFound('Unknown domain');
     }
 
     /**
@@ -115,9 +121,7 @@ class QuickDns
      */
     public function getTemplates()
     {
-        $response = $this->request('templates');
-
-        return (new Crawler($response))
+        return $this->page('templates')
             ->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]')
             ->each(function (Crawler $tr) {
                 preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
@@ -144,7 +148,7 @@ class QuickDns
                 return $template;
             }
         }
-        throw new \UnexpectedValueException('Unknown template');
+        throw new NotFound('Unknown template');
     }
 
     /**
@@ -154,9 +158,7 @@ class QuickDns
      */
     public function getGroups()
     {
-        $response = $this->request('groups');
-
-        return array_filter((new Crawler($response))
+        return array_filter($this->page('groups')
             ->filterXPath('//table[@id="group_table"]//tr')
             ->each(function (Crawler $tr) {
                 if (str_contains($tr->html(), 'listheader')) {
@@ -185,7 +187,59 @@ class QuickDns
                 return $group;
             }
         }
-        throw new \UnexpectedValueException('Unknown group');
+        throw new NotFound('Unknown group');
+    }
+
+    /**
+     * Fetch one of QuickDNS' HTML pages.
+     *
+     * A page without a list table is an empty list (QuickDNS leaves the table out when there are no
+     * zones), so the only reliable sign of a wrong page is that it is not a logged-in page.
+     *
+     * @throws UnrecognisedPage when the answer is not a logged-in QuickDNS page
+     */
+    protected function page(string $function): Crawler
+    {
+        $response = $this->request($function);
+        if (! str_contains($response, 'Log ud')) {
+            throw new UnrecognisedPage('Unexpected page at '.$function.': not logged in');
+        }
+
+        return new Crawler($response);
+    }
+
+    /**
+     * Run a QuickDNS command (addzone, delzone, updatetemplates, ...) and return its XML answer,
+     * <response><status>OK</status><statustext>...</statustext>...</response>.
+     *
+     * @param  string  $function
+     * @param  array  $options
+     * @param  string  $method
+     *
+     * @throws CommandFailed when QuickDNS answers ERROR, with QuickDNS' statustext as message
+     * @throws UnrecognisedPage when the answer is not a command response
+     */
+    public function command($function, $options = [], $method = self::METHOD_GET): Crawler
+    {
+        // Go through request(), which subclasses may override. It strips an XML declaration with a
+        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
+        $body = $this->request($function, $options, $method);
+        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
+        $xml = new Crawler();
+        $xml->addXmlContent($body);
+
+        $status = $xml->filterXPath('//response/status');
+        if (! $status->count()) {
+            throw new UnrecognisedPage('Unexpected response to '.$function);
+        }
+        if (trim($status->text()) !== 'OK') {
+            $statustext = $xml->filterXPath('//response/statustext');
+            throw new CommandFailed($statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()));
+        }
+
+        return $xml;
     }
 
     /**
@@ -199,16 +253,29 @@ class QuickDns
      */
     public function request($function, $options = [], $method = self::METHOD_GET): string
     {
-        if (! empty($options)) {
-            if ($method == self::METHOD_POST) {
-                $options = ['form_params' => $options];
-            } else {
-                $options = ['query' => $options];
-            }
-        }
-        $response = $this->client->request($method, $function, $options);
-
         //Apparently QuickDns declare the html as xml.
-        return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());
+        return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $this->send($function, $options, $method));
+    }
+
+    /**
+     * Send a request and return the raw response body.
+     *
+     * @param  string  $function  Path relative to https://www.quickdns.dk/, or an absolute URL
+     * @param  array  $options
+     * @param  string  $method
+     */
+    private function send($function, $options = [], $method = self::METHOD_GET): string
+    {
+        if (empty($options)) {
+            $options = [];
+        } elseif ($method == self::METHOD_POST) {
+            $options = ['form_params' => $options];
+        } else {
+            $options = ['query' => $options];
+        }
+        $options['cookies'] = $this->cookieJar;
+        $uri = UriResolver::resolve(new Uri($this->base_uri), new Uri($function));
+
+        return $this->client->request($method, $uri, $options)->getBody()->getContents();
     }
 }

@@ -26,21 +26,19 @@ class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function quickDns(array $fixtures = []): QuickDns
     {
-        $responses = array_map(fn ($fixture) => $this->response($fixture), array_merge(['login-ok'], $fixtures));
+        return $this->quickDnsWithLogin('login-ok', $fixtures);
+    }
+
+    /**
+     * Like quickDns(), with the given fixture as the answer to the login request.
+     */
+    protected function quickDnsWithLogin(string $login, array $fixtures = []): QuickDns
+    {
+        $responses = array_map(fn ($fixture) => $this->response($fixture), array_merge([$login], $fixtures));
         $stack = HandlerStack::create(new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
 
-        // QuickDns builds its own client and logs in from the constructor, so swap the client in
-        // before logging in.
-        $quickDns = (new \ReflectionClass(QuickDns::class))->newInstanceWithoutConstructor();
-        foreach (['email' => 'test@example.dk', 'password' => 'secret', 'client' => new Client(['handler' => $stack])] as $property => $value) {
-            (new \ReflectionProperty(QuickDns::class, $property))->setValue($quickDns, $value);
-        }
-        if (! $quickDns->login()) {
-            throw new \RuntimeException('Mocked login failed.');
-        }
-
-        return $quickDns;
+        return new QuickDns('test@example.dk', 'secret', new Client(['handler' => $stack]));
     }
 
     protected function fixture(string $name): string
@@ -55,8 +53,14 @@ class TestCase extends \PHPUnit\Framework\TestCase
         return new Response(200, ['Content-Type' => 'text/html'], $body);
     }
 
+    /**
+     * The last request's URI relative to https://www.quickdns.dk/, e.g. "delzone?id=1".
+     */
     protected function lastRequestUri(): string
     {
-        return (string) end($this->history)['request']->getUri();
+        $uri = (string) end($this->history)['request']->getUri();
+        $this->assertStringStartsWith('https://www.quickdns.dk/', $uri);
+
+        return substr($uri, strlen('https://www.quickdns.dk/'));
     }
 }
