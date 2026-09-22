@@ -73,7 +73,7 @@ class QuickDns
     public function getZones()
     {
         $zones = [];
-        $response = $this->request('zones', QuickDns::METHOD_GET);
+        $response = $this->request('zones');
         $html = new Crawler($response);
         foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
@@ -115,7 +115,7 @@ class QuickDns
      */
     public function getTemplates()
     {
-        $response = $this->request('templates', QuickDns::METHOD_GET);
+        $response = $this->request('templates');
 
         return (new Crawler($response))
             ->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]')
@@ -154,7 +154,7 @@ class QuickDns
      */
     public function getGroups()
     {
-        $response = $this->request('groups', QuickDns::METHOD_GET);
+        $response = $this->request('groups');
 
         return array_filter((new Crawler($response))
             ->filterXPath('//table[@id="group_table"]/tr')
