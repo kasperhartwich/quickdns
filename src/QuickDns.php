@@ -221,9 +221,14 @@ class QuickDns
      */
     public function command($function, $options = [], $method = self::METHOD_GET): Crawler
     {
-        // Parse the raw body: its XML declaration tells libxml the encoding (ISO-8859-1).
+        // Go through request(), which subclasses may override. It strips an XML declaration with a
+        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
+        $body = $this->request($function, $options, $method);
+        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
         $xml = new Crawler();
-        $xml->addXmlContent($this->send($function, $options, $method));
+        $xml->addXmlContent($body);
 
         $status = $xml->filterXPath('//response/status');
         if (! $status->count()) {
