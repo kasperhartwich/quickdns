@@ -28,6 +28,8 @@ class QuickDns
 
     private $cookieJar;
 
+    private $loggedIn = false;
+
     const METHOD_POST = 'POST';
 
     const METHOD_GET = 'GET';
@@ -43,11 +45,36 @@ class QuickDns
      */
     public function __construct($email, $password, ?ClientInterface $client = null)
     {
+        $this->configure($email, $password, $client);
+        $this->logInOrFail();
+    }
+
+    /**
+     * A QuickDns that logs in on its first request instead of right away, once per instance.
+     * Useful where the object is built long before it is used, e.g. in a service container.
+     * Wrong credentials throw LoginFailed from that first request.
+     *
+     * @param  string  $email
+     * @param  string  $password
+     */
+    public static function lazy($email, $password, ?ClientInterface $client = null): static
+    {
+        $quickDns = (new \ReflectionClass(static::class))->newInstanceWithoutConstructor();
+        $quickDns->configure($email, $password, $client);
+
+        return $quickDns;
+    }
+
+    private function configure($email, $password, ?ClientInterface $client): void
+    {
         $this->email = $email;
         $this->password = $password;
-
         $this->cookieJar = new CookieJar();
         $this->client = $client ?? new Client();
+    }
+
+    private function logInOrFail(): void
+    {
         if (! $this->login()) {
             throw new LoginFailed('Login failed.');
         }
@@ -65,6 +92,8 @@ class QuickDns
             'password' => $this->password,
         ], self::METHOD_POST);
         if (str_contains($response, 'Log ud')) {
+            $this->loggedIn = true;
+
             return true;
         } elseif (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
@@ -266,6 +295,9 @@ class QuickDns
      */
     private function send($function, $options = [], $method = self::METHOD_GET): string
     {
+        if (! $this->loggedIn && $function !== 'login') {
+            $this->logInOrFail();
+        }
         if (empty($options)) {
             $options = [];
         } elseif ($method == self::METHOD_POST) {

@@ -32,6 +32,14 @@ use QuickDns\QuickDns;
 $quickDns = new QuickDns('my@email.example', 'password');
 ```
 
+To log in on the first request instead, for example when the client is built in a service
+container long before it is used, use `QuickDns::lazy()`. It logs in once per instance, and wrong
+credentials throw `LoginFailed` from that first request:
+
+```php
+$quickDns = QuickDns::lazy('my@email.example', 'password');
+```
+
 To send the requests through your own Guzzle client (middleware for logging or rate limiting, or
 a `MockHandler` in tests), pass it as the third argument. QuickDns keeps the login session
 cookies itself, so the client needs no cookie jar:
