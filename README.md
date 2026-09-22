@@ -132,7 +132,34 @@ try {
 }
 ```
 
-## Testing
+## Testing your code
+
+`QuickDns\Testing\FakeQuickDns` is an in-memory quickdns.dk. It keeps zones, templates, groups
+and records and answers with the same pages as QuickDNS, so code that uses this package can be
+tested without the network:
+
+```php
+use QuickDns\Testing\FakeQuickDns;
+use QuickDns\Zone;
+
+$fake = new FakeQuickDns();
+$fake->addTemplate('standard');
+$fake->addZone('existing.dk', templates: ['standard']);
+$fake->addRecord('existing.dk', '@', 'MX', 'mx1.example.dk.', 3600, 10);
+
+$quickDns = $fake->quickDns(); // or new QuickDns('test@example.dk', 'secret', $fake->client())
+
+(new Zone($quickDns, 'new.dk'))->create();
+
+$fake->hasZone('new.dk');           // true
+$fake->templatesOf('existing.dk');  // ['standard']
+$fake->requests();                  // every request it answered
+```
+
+Like QuickDNS, every new zone gets four NS records from the template "QuickDNS global". To keep
+your own middleware, use the fake as the handler: `HandlerStack::create($fake)`.
+
+## Testing this package
 
 ```bash
 composer test
