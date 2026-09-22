@@ -137,4 +137,47 @@ final class FakeQuickDnsTest extends TestCase
 
         $this->assertSame(['/login', '/zones'], array_map(fn ($r) => $r->getUri()->getPath(), $fake->requests()));
     }
+
+    public function test_deleting_a_template_in_use_is_a_server_error()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addTemplate('standard');
+        $fake->addZone('flyvende-agurk-pingvin.dk', ['standard']);
+
+        try {
+            $fake->quickDns()->getTemplate('standard')->delete();
+            $this->fail('Expected a server error.');
+        } catch (\GuzzleHttp\Exception\ServerException $e) {
+            $this->assertSame(500, $e->getResponse()->getStatusCode());
+        }
+        $this->assertTrue($fake->hasTemplate('standard'));
+    }
+
+    public function test_deleting_a_group_in_use_takes_it_off_its_zones()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addGroup('kunder');
+        $fake->addZone('flyvende-agurk-pingvin.dk', [], ['kunder']);
+        $quickDns = $fake->quickDns();
+
+        $quickDns->getGroup('kunder')->delete();
+
+        $this->assertSame([], $quickDns->getZone('flyvende-agurk-pingvin.dk')->groups);
+    }
+
+    public function test_names_outside_latin_1_are_invalid()
+    {
+        $quickDns = (new FakeQuickDns())->quickDns();
+
+        $this->expectException(CommandFailed::class);
+        $this->expectExceptionMessage('Skabelonens navn er ugyldigt');
+        (new Template($quickDns, '東京'))->create();
+    }
+
+    public function test_created_answers_carry_the_user_like_quickdns()
+    {
+        $xml = (new FakeQuickDns())->quickDns()->command('addzone', ['zone' => 'flyvende-agurk-pingvin.dk', 'getdata' => 0]);
+
+        $this->assertSame((string) FakeQuickDns::USER, $xml->filterXPath('//response/user')->text());
+    }
 }

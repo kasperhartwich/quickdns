@@ -31,6 +31,11 @@ use QuickDns\QuickDns;
  */
 final class FakeQuickDns
 {
+    /**
+     * The account's user id in command answers (QuickDNS sends the real one in <user>).
+     */
+    public const USER = 1000;
+
     private string $email;
 
     private string $password;
@@ -195,9 +200,9 @@ final class FakeQuickDns
             'addzone' => $this->addZoneCommand((string) ($query['zone'] ?? '')),
             'delzone' => $this->deleteCommand($this->zones, (int) ($query['id'] ?? 0), 'Zonen er slettet', 'Zonen findes ikke'),
             'addtemplate' => $this->addTemplateCommand((string) ($query['zone'] ?? '')),
-            'deltemplate' => $this->deleteCommand($this->templates, (int) ($query['id'] ?? 0), 'Skabelonen er slettet', 'Skabelonen findes ikke'),
+            'deltemplate' => $this->deleteTemplateCommand((int) ($query['id'] ?? 0)),
             'addgroup' => $this->addGroupCommand((string) ($query['group'] ?? '')),
-            'delgroup' => $this->deleteCommand($this->groups, (int) ($query['id'] ?? 0), 'Gruppen er slettet', 'Gruppen findes ikke'),
+            'delgroup' => $this->deleteGroupCommand((int) ($query['id'] ?? 0)),
             'updatetemplates' => $this->updateCommand('templates', $query, 'template', $this->templates),
             'updategroups' => $this->updateCommand('groups', $query, 'group', $this->groups),
             default => new FulfilledPromise(new Response(404, [], 'Not Found')),
@@ -310,31 +315,31 @@ final class FakeQuickDns
     private function addZoneCommand(string $domain): PromiseInterface
     {
         if (! preg_match('/^(?=.{1,253}$)([a-z0-9æøå](-*[a-z0-9æøå])*\.)+(dk|com|net|org|eu|se|no|de|io|nu|info)$/iu', $domain)) {
-            return $this->xml('ERROR', 'Zonens navn er ugyldigt', ['zone' => $domain]);
+            return $this->xml('ERROR', 'Zonens navn er ugyldigt', ['user' => self::USER, 'zone' => $domain]);
         }
         if ($this->hasZone($domain)) {
-            return $this->xml('ERROR', 'Zonen eksisterer allerede', ['zone' => $domain]);
+            return $this->xml('ERROR', 'Zonen eksisterer allerede', ['user' => self::USER, 'zone' => $domain]);
         }
 
-        return $this->xml('OK', 'Zonen er oprettet', ['zone' => $domain, 'zoneid' => $this->addZone($domain)]);
+        return $this->xml('OK', 'Zonen er oprettet', ['user' => self::USER, 'zone' => $domain, 'zoneid' => $this->addZone($domain)]);
     }
 
     private function addTemplateCommand(string $name): PromiseInterface
     {
-        if (! preg_match('/^[\w.-]+$/u', $name)) {
-            return $this->xml('ERROR', 'Skabelonens navn er ugyldigt', ['zone' => $name]);
+        if (! $this->validName($name)) {
+            return $this->xml('ERROR', 'Skabelonens navn er ugyldigt', ['user' => self::USER, 'zone' => $name]);
         }
         if ($this->hasTemplate($name)) {
-            return $this->xml('ERROR', 'Skabelonen eksisterer allerede', ['zone' => $name]);
+            return $this->xml('ERROR', 'Skabelonen eksisterer allerede', ['user' => self::USER, 'zone' => $name]);
         }
 
         // QuickDNS answers with the template's id in <zoneid>.
-        return $this->xml('OK', 'Skabelonen er oprettet', ['zone' => $name, 'zoneid' => $this->addTemplate($name)]);
+        return $this->xml('OK', 'Skabelonen er oprettet', ['user' => self::USER, 'zone' => $name, 'zoneid' => $this->addTemplate($name)]);
     }
 
     private function addGroupCommand(string $name): PromiseInterface
     {
-        if (! preg_match('/^[\w.-]+$/u', $name)) {
+        if (! $this->validName($name)) {
             return $this->xml('ERROR', 'Gruppens navn er ugyldigt');
         }
         if ($this->hasGroup($name)) {
@@ -344,6 +349,28 @@ final class FakeQuickDns
 
         // Unlike addzone and addtemplate, QuickDNS does not answer with the new id.
         return $this->xml('OK', 'Gruppen er oprettet');
+    }
+
+    private function deleteTemplateCommand(int $id): PromiseInterface
+    {
+        foreach ($this->zones as $zone) {
+            if (in_array($id, $zone['templates'], true)) {
+                // What quickdns.dk does (checked 2026-09-22): an HTTP 500, and the template stays.
+                return new FulfilledPromise(new Response(500, ['Content-Type' => 'text/html'], 'Internal Server Error'));
+            }
+        }
+
+        return $this->deleteCommand($this->templates, $id, 'Skabelonen er slettet', 'Skabelonen findes ikke');
+    }
+
+    private function deleteGroupCommand(int $id): PromiseInterface
+    {
+        // quickdns.dk deletes a group that zones are in, and takes it off those zones.
+        foreach ($this->zones as $zoneId => $zone) {
+            $this->zones[$zoneId]['groups'] = array_values(array_diff($zone['groups'], [$id]));
+        }
+
+        return $this->deleteCommand($this->groups, $id, 'Gruppen er slettet', 'Gruppen findes ikke');
     }
 
     private function deleteCommand(array &$items, int $id, string $ok, string $missing): PromiseInterface
@@ -465,6 +492,16 @@ final class FakeQuickDns
         }
 
         return null;
+    }
+
+    /**
+     * quickdns.dk accepts letters, digits, "-", "_" and "." in template and group names, Danish
+     * letters included, and rejects anything outside ISO-8859-1 (checked 2026-09-22).
+     */
+    private function validName(string $name): bool
+    {
+        return preg_match('/^[\p{L}\p{N}_.-]+$/u', $name)
+            && mb_convert_encoding(mb_convert_encoding($name, 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1') === $name;
     }
 
     private function now(): string
