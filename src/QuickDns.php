@@ -30,6 +30,10 @@ class QuickDns
 
     private $loggedIn = false;
 
+    private $loggingIn = false;
+
+    private static $constructLazily = false;
+
     const METHOD_POST = 'POST';
 
     const METHOD_GET = 'GET';
@@ -46,6 +50,11 @@ class QuickDns
     public function __construct($email, $password, ?ClientInterface $client = null)
     {
         $this->configure($email, $password, $client);
+        if (self::$constructLazily) {
+            self::$constructLazily = false;
+
+            return;
+        }
         $this->logInOrFail();
     }
 
@@ -59,10 +68,13 @@ class QuickDns
      */
     public static function lazy($email, $password, ?ClientInterface $client = null): static
     {
-        $quickDns = (new \ReflectionClass(static::class))->newInstanceWithoutConstructor();
-        $quickDns->configure($email, $password, $client);
-
-        return $quickDns;
+        // Go through the constructor, so a subclass' own constructor still runs.
+        self::$constructLazily = true;
+        try {
+            return new static($email, $password, $client);
+        } finally {
+            self::$constructLazily = false;
+        }
     }
 
     private function configure($email, $password, ?ClientInterface $client): void
@@ -75,9 +87,16 @@ class QuickDns
 
     private function logInOrFail(): void
     {
-        if (! $this->login()) {
+        $this->loggingIn = true;
+        try {
+            $loggedIn = $this->login();
+        } finally {
+            $this->loggingIn = false;
+        }
+        if (! $loggedIn) {
             throw new LoginFailed('Login failed.');
         }
+        $this->loggedIn = true;
     }
 
     /**
@@ -295,7 +314,7 @@ class QuickDns
      */
     private function send($function, $options = [], $method = self::METHOD_GET): string
     {
-        if (! $this->loggedIn && $function !== 'login') {
+        if (! $this->loggedIn && ! $this->loggingIn && ltrim($function, '/') !== 'login') {
             $this->logInOrFail();
         }
         if (empty($options)) {
