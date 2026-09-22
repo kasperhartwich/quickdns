@@ -28,6 +28,15 @@ class QuickDns
 
     private $cookieJar;
 
+    private $loggedIn = false;
+
+    private $loggingIn = false;
+
+    /**
+     * The class lazy() is constructing, or null.
+     */
+    private static $constructLazily = null;
+
     const METHOD_POST = 'POST';
 
     const METHOD_GET = 'GET';
@@ -43,14 +52,57 @@ class QuickDns
      */
     public function __construct($email, $password, ?ClientInterface $client = null)
     {
+        $this->configure($email, $password, $client);
+        if (self::$constructLazily === static::class) {
+            self::$constructLazily = null;
+
+            return;
+        }
+        $this->logInOrFail();
+    }
+
+    /**
+     * A QuickDns that logs in on its first request instead of right away, once per instance.
+     * Useful where the object is built long before it is used, e.g. in a service container.
+     * Wrong credentials throw LoginFailed from that first request.
+     *
+     * @param  string  $email
+     * @param  string  $password
+     */
+    public static function lazy($email, $password, ?ClientInterface $client = null): static
+    {
+        // Go through the constructor, so a subclass' own constructor still runs.
+        // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy, and
+        // restored afterwards, so a lazy() call inside one does not clear the outer call's flag.
+        $previous = self::$constructLazily;
+        self::$constructLazily = static::class;
+        try {
+            return new static($email, $password, $client);
+        } finally {
+            self::$constructLazily = $previous;
+        }
+    }
+
+    private function configure($email, $password, ?ClientInterface $client): void
+    {
         $this->email = $email;
         $this->password = $password;
-
         $this->cookieJar = new CookieJar();
         $this->client = $client ?? new Client();
-        if (! $this->login()) {
+    }
+
+    private function logInOrFail(): void
+    {
+        $this->loggingIn = true;
+        try {
+            $loggedIn = $this->login();
+        } finally {
+            $this->loggingIn = false;
+        }
+        if (! $loggedIn) {
             throw new LoginFailed('Login failed.');
         }
+        $this->loggedIn = true;
     }
 
     /**
@@ -65,6 +117,8 @@ class QuickDns
             'password' => $this->password,
         ], self::METHOD_POST);
         if (str_contains($response, 'Log ud')) {
+            $this->loggedIn = true;
+
             return true;
         } elseif (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
@@ -266,6 +320,9 @@ class QuickDns
      */
     private function send($function, $options = [], $method = self::METHOD_GET): string
     {
+        if (! $this->loggedIn && ! $this->loggingIn && ltrim($function, '/') !== 'login') {
+            $this->logInOrFail();
+        }
         if (empty($options)) {
             $options = [];
         } elseif ($method == self::METHOD_POST) {

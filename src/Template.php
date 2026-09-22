@@ -31,15 +31,21 @@ class Template extends BaseModel
     }
 
     /**
-     * Create Template
+     * Create Template. Sets the template's id, so it can be deleted or used right away.
      *
      * @return $this
      */
     public function create()
     {
-        $this->quickdns->command('addtemplate', [
+        $response = $this->quickdns->command('addtemplate', [
             'zone' => $this->name,
         ], QuickDns::METHOD_GET);
+
+        // QuickDNS answers with the template's id in <zoneid>.
+        $zoneid = $response->filterXPath('//response/zoneid');
+        if ($zoneid->count()) {
+            $this->id = (int) trim($zoneid->text());
+        }
 
         return $this;
     }

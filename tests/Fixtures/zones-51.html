@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>QuickDNS.dk - Mine zoner</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="/default.css" />
+<script type="text/javascript" src="/js/misc.js"></script>
+<script type="text/javascript" src="/js/layout.js"></script>
+<!--[if lt IE 7]><script type="text/javascript" src="/js/lt7.js"></script><![endif]-->
+<script type="text/javascript" src="/js/zones.js"></script>
+<script type="text/javascript" src="/js/pagination.js"></script>
+
+</head><body onload="fix_layout(); zones_init(); delegation_status(); pagination_init('zone_table', 1, 50);">
+<div class="topleft" id="topdiv">
+	<div id="notification"></div>
+	<a href="/"><img src="/gfx/toplogo.png" alt="QuickDNS" /></a>
+</div>
+<div class="page" id="pagediv">
+	<div class="menu" id="menu">
+		<p>
+			<a href="/">Velkommen</a><br />
+			<a href="/about">Om QuickDNS</a><br />
+			<a href="/guides">Vejledninger</a><br />
+			<a href="/faq">Spørgsmål og svar</a><br />
+			<a href="/glossary">Ordforklaring</a><br />
+			<a href="/forum">Forum</a><br />
+			<a href="/contact">Kontakt</a><br />
+		</p>
+		<div class="line"></div>
+<p>
+<a href="/zones">DNS</a><br />
+
+<a href="/logout">Log ud</a><br />
+</p>
+
+	</div>
+	<div class="content" id="contentdiv">
+		<div class="contentinner">
+			<div id="tabbar">
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabactive">
+    &nbsp;<a href="/zones">Zoner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/templates">Skabeloner</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/groups">Grupper</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/search">Søg</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+  <div class="tabinactive">
+    &nbsp;<a href="/settings">Indstillinger</a>
+  </div>
+  <div class="tabspacer">
+    &nbsp;
+  </div>
+</div>
+
+
+<table id="paginationtop" class="paginationtable">
+  <tr>
+    <td>Søg:&nbsp;<input type="text" id="pagination_search" size="8" onkeyup="pagination_search(this.value, this);"></td>
+    <td><a href="javascript:void(0);" onclick="pagination_first(); this.scrollIntoView(false);" title="First page">&lt;&lt;</a>&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onclick="pagination_previous(); this.scrollIntoView(false);" title="Previous page">&lt;</a></td>
+    <td id="pagination_links_top">...</td>
+    <td><a href="javascript:void(0);" onclick="pagination_next(); this.scrollIntoView(false);" title="Next page">&gt;</a>&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onclick="pagination_last(); this.scrollIntoView(false);" title="Last page">&gt;&gt;</a></td>
+  </tr>
+</table>
+
+<div id="zones">
+  <table class="listtable" id="zone_table">
+    <tr class="listheader">
+      <th class="listheader">&nbsp;</th>
+      <th class="listheader"><a href="/zones?grouping=alphabetical">Zone</a></th>
+      <th class="listheader"><a href="/zones?grouping=template">Skabeloner</a></th>
+      <th class="listheader"><a href="/zones?grouping=group">Grupper</a></th>
+      <th class="listheader">Opdateret</th>
+      <th class="listheader">Slet</th>
+    </tr>
+
+  <tr class="listrow2"  zoneid="17309">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17309">flyvende-agurk-pingvin-01.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17309; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17309; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:32</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17309; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17310">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17310">flyvende-agurk-pingvin-02.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17310; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17310; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17310; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17311">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17311">flyvende-agurk-pingvin-03.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17311; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17311; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:33</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17311; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17312">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17312">flyvende-agurk-pingvin-04.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17312; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17312; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17312; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17313">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17313">flyvende-agurk-pingvin-05.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17313; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17313; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:33</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17313; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17314">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17314">flyvende-agurk-pingvin-06.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17314; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17314; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17314; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17315">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17315">flyvende-agurk-pingvin-07.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17315; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17315; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:33</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17315; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17316">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17316">flyvende-agurk-pingvin-08.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17316; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17316; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17316; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17317">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17317">flyvende-agurk-pingvin-09.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17317; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17317; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:33</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17317; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17318">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17318">flyvende-agurk-pingvin-10.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17318; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17318; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17318; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17319">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17319">flyvende-agurk-pingvin-11.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17319; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17319; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:33</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17319; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17320">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17320">flyvende-agurk-pingvin-12.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17320; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17320; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:33</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17320; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17321">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17321">flyvende-agurk-pingvin-13.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17321; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17321; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17321; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17322">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17322">flyvende-agurk-pingvin-14.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17322; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17322; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17322; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17323">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17323">flyvende-agurk-pingvin-15.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17323; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17323; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17323; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17324">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17324">flyvende-agurk-pingvin-16.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17324; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17324; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17324; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17325">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17325">flyvende-agurk-pingvin-17.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17325; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17325; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17325; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17326">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17326">flyvende-agurk-pingvin-18.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17326; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17326; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17326; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17327">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17327">flyvende-agurk-pingvin-19.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17327; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17327; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17327; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17328">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17328">flyvende-agurk-pingvin-20.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17328; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17328; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17328; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17329">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17329">flyvende-agurk-pingvin-21.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17329; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17329; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17329; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17330">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17330">flyvende-agurk-pingvin-22.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17330; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17330; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17330; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17331">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17331">flyvende-agurk-pingvin-23.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17331; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17331; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17331; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17332">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17332">flyvende-agurk-pingvin-24.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17332; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17332; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17332; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17333">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17333">flyvende-agurk-pingvin-25.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17333; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17333; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:34</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17333; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17334">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17334">flyvende-agurk-pingvin-26.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17334; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17334; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:34</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17334; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17335">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17335">flyvende-agurk-pingvin-27.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17335; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17335; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17335; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17336">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17336">flyvende-agurk-pingvin-28.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17336; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17336; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17336; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17337">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17337">flyvende-agurk-pingvin-29.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17337; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17337; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17337; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17338">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17338">flyvende-agurk-pingvin-30.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17338; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17338; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17338; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17339">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17339">flyvende-agurk-pingvin-31.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17339; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17339; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17339; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17340">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17340">flyvende-agurk-pingvin-32.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17340; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17340; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17340; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17341">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17341">flyvende-agurk-pingvin-33.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17341; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17341; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17341; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17342">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17342">flyvende-agurk-pingvin-34.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17342; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17342; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17342; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17343">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17343">flyvende-agurk-pingvin-35.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17343; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17343; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17343; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17344">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17344">flyvende-agurk-pingvin-36.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17344; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17344; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17344; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17345">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17345">flyvende-agurk-pingvin-37.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17345; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17345; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17345; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17346">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17346">flyvende-agurk-pingvin-38.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17346; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17346; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17346; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17347">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17347">flyvende-agurk-pingvin-39.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17347; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17347; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17347; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17348">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17348">flyvende-agurk-pingvin-40.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17348; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17348; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:35</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17348; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17349">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17349">flyvende-agurk-pingvin-41.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17349; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17349; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:35</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17349; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17350">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17350">flyvende-agurk-pingvin-42.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17350; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17350; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:36</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17350; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17351">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17351">flyvende-agurk-pingvin-43.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17351; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17351; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:36</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17351; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17352">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17352">flyvende-agurk-pingvin-44.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17352; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17352; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:36</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17352; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17353">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17353">flyvende-agurk-pingvin-45.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17353; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17353; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:36</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17353; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17354">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17354">flyvende-agurk-pingvin-46.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17354; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17354; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:36</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17354; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17355">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17355">flyvende-agurk-pingvin-47.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17355; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17355; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:36</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17355; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17356">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17356">flyvende-agurk-pingvin-48.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17356; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17356; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:36</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17356; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2"  zoneid="17357">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17357">flyvende-agurk-pingvin-49.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17357; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17357; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:36</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17357; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow1"  zoneid="17358">
+    <td class="listrow1">&nbsp;</td>
+    <td class="listrow1"><a href="/editzone?id=17358">flyvende-agurk-pingvin-50.dk</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17358; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17358; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow1">2026-09-22 19:00:36</td>
+    <td class="listrow1"><a href="javascript:void(0);" onclick="zoneid = 17358; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+  <tr class="listrow2" style="display: none;" zoneid="17359">
+    <td class="listrow2">&nbsp;</td>
+    <td class="listrow2"><a href="/editzone?id=17359">flyvende-agurk-pingvin-51.dk</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17359; templates(parentNode.parentNode.rowIndex, new Array());">Ingen</a></td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17359; groups(parentNode.parentNode.rowIndex, new Array(), new Array());">Ingen</a></td>
+    <td class="listrow2">2026-09-22 19:00:36</td>
+    <td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = 17359; del(parentNode.parentNode.rowIndex);">Slet</a></td>
+  </tr>
+
+  </table>
+  <table id="paginationbottom" class="paginationtable">
+  <tr>
+    <td>Søg:&nbsp;<input type="text" id="pagination_search" size="8" onkeyup="pagination_search(this.value, this);"></td>
+    <td><a href="javascript:void(0);" onclick="pagination_first(); this.scrollIntoView(false);" title="First page">&lt;&lt;</a>&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onclick="pagination_previous(); this.scrollIntoView(false);" title="Previous page">&lt;</a></td>
+    <td id="pagination_links_bottom">...</td>
+    <td><a href="javascript:void(0);" onclick="pagination_next(); this.scrollIntoView(false);" title="Next page">&gt;</a>&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onclick="pagination_last(); this.scrollIntoView(false);" title="Last page">&gt;&gt;</a></td>
+  </tr>
+</table>
+
+
+<br />
+
+  <div id="addbox">
+    <form id="addform" onsubmit="addzone_submit(false); return false;">
+      <table>
+	<tr><td>Zone:</td><td><input type="text" name="zone"></td></tr>
+	<tr><td colspan="2"><input type="checkbox" name="getdata" value="1"> Hent data fra nuværende navneserver:</tr>
+	<tr><td colspan="2"><input type="button" value="Opret zone" onclick="addzone_submit(false);">&nbsp;<span id="addzonestatus"></span></td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="deletebox">
+    <form id="deleteform" onSubmit="submit_delete(); return false;">
+      <input type="hidden" name="row" />
+      <table>
+	<tr><td colspan="2">
+	    Ønsker du at slette denne zone?
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Ja" onclick="delzone_submit(false);" />
+	    <input type="button" value="Nej" onclick="cancel_delete();" />
+	  </td><td>
+	    <span id="delzonestatus"></span>
+	</td></tr>
+	</table>
+    </form>
+  </div>
+
+  <div id="templatesbox">
+    <form id="templatesform" onsubmit="templates_submit(); return false;">
+      <table>
+	<tr><td>Skabeloner tilknyttet denne zone:</td></tr>
+	<tr><td>
+      <input type="checkbox" id="templatecheckbox17307" value="1">test-template</input><br />
+
+	</td></tr>
+	<tr><td><a href="javascript:void(0);" onclick="toggle_global_templates_select();">Globale skabeloner</a></td></tr>
+	<tr id="global_templates_select" style="display:none"><td>
+      <input type="checkbox" id="templatecheckbox840" value="1">Google Talk</input><br />
+      <input type="checkbox" id="templatecheckbox316" value="1">Google mail</input><br />
+
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="templates_submit();" />
+	    <input type="button" value="Annullér" onclick="cancel_templates();" />
+	</td></tr>
+      </table>
+      <span id="templatesstatus"></span>
+    </form>
+  </div>
+
+  <div id="renamebox">
+    <form id="renameform" onsubmit="rename_submit(); return false;">
+      <table>
+	<tr><td>
+	    Omdøb skabelon:
+	  </td><td>
+	    <input type="text" id="name" />
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="rename_submit();" />
+	    <input type="button" value="Annullér" onclick="cancel_rename();" />
+	  </td><td>
+	    <span id="renamestatus"></span>
+	</td></tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="groupsbox">
+    <form id="groupsform" onsubmit="groups_submit(false); return false;">
+      <table>
+	<tr><td>Grupper der kan rette denne zone:</td></tr>
+	<tr><td>
+      <input type="checkbox" id="groupcheckbox754" value="1">test-group</input><br />
+
+	</td></tr>
+	<tr><td>
+	    <input type="button" value="Gem" onclick="groups_submit(false);" />
+	    <input type="button" value="Annullér" onclick="cancel_groups();" />
+	</td></tr>
+      </table>
+      <span id="groupsstatus"></span>
+    </form>
+  </div>
+
+</div>
+
+
+		</div>
+		<div class="footer">
+			<table width="100%"><tr>
+				<td class="top">&copy;&nbsp;2008 - 2026&nbsp;QuickDNS.dk</td>
+				<td class="right"></td>
+			</tr></table>
+		</div>
+	</div>
+</div>
+</body></html>

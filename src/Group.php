@@ -28,7 +28,8 @@ class Group extends BaseModel
     }
 
     /**
-     * Create Group
+     * Create Group. QuickDNS does not answer with the new group's id, so fetch the group with
+     * QuickDns::getGroup() before deleting it or adding zones.
      *
      * @return $this
      */

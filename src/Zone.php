@@ -31,17 +31,23 @@ class Zone extends BaseModel
     }
 
     /**
-     * Create Zone
+     * Create Zone. Sets the zone's id, so it can be deleted or attached right away.
      *
      * @param  bool  $get_data
      * @return $this
      */
     public function create($get_data = false)
     {
-        $this->quickdns->command('addzone', [
+        $response = $this->quickdns->command('addzone', [
             'zone' => $this->domain,
             'getdata' => $get_data ? 1 : 0,
         ], QuickDns::METHOD_GET);
+
+        // A string, like the ids getZones() returns.
+        $zoneid = $response->filterXPath('//response/zoneid');
+        if ($zoneid->count()) {
+            $this->id = trim($zoneid->text());
+        }
 
         return $this;
     }

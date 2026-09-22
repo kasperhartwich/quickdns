@@ -14,6 +14,7 @@ final class TemplateTest extends TestCase
 
         $this->assertInstanceOf(Template::class, $template);
         $this->assertSame('addtemplate?zone=sjaskende-rabarber', $this->lastRequestUri());
+        $this->assertSame(17295, $template->id);
     }
 
     public function test_create_already_exists()

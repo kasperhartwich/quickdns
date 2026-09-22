@@ -64,6 +64,18 @@ final class QuickDnsTest extends TestCase
         $this->assertSame('2026-09-22 18:21:28', $zones[0]->updated);
     }
 
+    /**
+     * Issue #8: QuickDNS used to show 50 zones per page. It now lists them all on one page
+     * (recorded with 51 zones on 2026-09-22).
+     */
+    public function test_get_zones_reads_more_than_50()
+    {
+        $zones = $this->quickDns(['zones-51'])->getZones();
+
+        $this->assertCount(51, $zones);
+        $this->assertSame('flyvende-agurk-pingvin-51.dk', end($zones)->domain);
+    }
+
     public function test_get_zones_empty()
     {
         $this->assertSame([], $this->quickDns(['zones-empty'])->getZones());
