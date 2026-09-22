@@ -72,6 +72,27 @@ final class ExceptionsTest extends TestCase
         $this->quickDns(['login-failed'])->$method();
     }
 
+    #[DataProvider('listTables')]
+    public function test_list_page_without_its_table_throws_unrecognised_page(string $method, string $message)
+    {
+        // A logged-in page, just not the right one.
+        $this->expectException(UnrecognisedPage::class);
+        $this->expectExceptionMessage($message);
+        $this->quickDns(['groups'])->$method();
+    }
+
+    public static function listTables(): array
+    {
+        return [['getZones', 'No zone_table on the zones page'], ['getTemplates', 'No zone_table on the templates page']];
+    }
+
+    public function test_groups_page_without_its_table_throws_unrecognised_page()
+    {
+        $this->expectException(UnrecognisedPage::class);
+        $this->expectExceptionMessage('No group_table on the groups page');
+        $this->quickDns(['zones'])->getGroups();
+    }
+
     public static function listMethods(): array
     {
         return [['getZones', 'zones'], ['getTemplates', 'templates'], ['getGroups', 'groups']];
