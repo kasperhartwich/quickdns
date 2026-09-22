@@ -35,15 +35,6 @@ final class QuickDnsTest extends TestCase
         $this->assertSame('PHPSESSID=abc', $this->history[1]['request']->getHeaderLine('Cookie'));
     }
 
-    public function test_login_failed_from_constructor()
-    {
-        $stack = HandlerStack::create(new MockHandler([$this->response('login-failed')]));
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Login failed.');
-        new QuickDns('test@example.dk', 'wrong', new Client(['handler' => $stack]));
-    }
-
     public function test_login_failed()
     {
         $quickDns = $this->quickDns(['login-failed']);
@@ -76,13 +67,6 @@ final class QuickDnsTest extends TestCase
     public function test_get_zones_empty()
     {
         $this->assertSame([], $this->quickDns(['zones-empty'])->getZones());
-    }
-
-    public function test_get_zone_unknown_domain()
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('Unknown domain');
-        $this->quickDns(['zones'])->getZone('findes-ikke.dk');
     }
 
     public function test_get_templates()

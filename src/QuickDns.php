@@ -5,6 +5,9 @@ namespace QuickDns;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJar;
+use QuickDns\Exceptions\LoginFailed;
+use QuickDns\Exceptions\NotFound;
+use QuickDns\Exceptions\UnrecognisedPage;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -43,7 +46,7 @@ class QuickDns
         $this->cookieJar = new CookieJar();
         $this->client = $client ?? new Client();
         if (! $this->login()) {
-            throw new \InvalidArgumentException('Login failed.');
+            throw new LoginFailed('Login failed.');
         }
     }
 
@@ -63,7 +66,7 @@ class QuickDns
         } elseif (strpos($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
             return false;
         }
-        throw new \UnexpectedValueException('Unknown response at login');
+        throw new UnrecognisedPage('Unknown response at login');
     }
 
     /**
@@ -106,7 +109,7 @@ class QuickDns
                 return $zone;
             }
         }
-        throw new \UnexpectedValueException('Unknown domain');
+        throw new NotFound('Unknown domain');
     }
 
     /**
@@ -145,7 +148,7 @@ class QuickDns
                 return $template;
             }
         }
-        throw new \UnexpectedValueException('Unknown template');
+        throw new NotFound('Unknown template');
     }
 
     /**
@@ -186,7 +189,7 @@ class QuickDns
                 return $group;
             }
         }
-        throw new \UnexpectedValueException('Unknown group');
+        throw new NotFound('Unknown group');
     }
 
     /**

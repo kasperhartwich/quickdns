@@ -26,7 +26,15 @@ class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function quickDns(array $fixtures = []): QuickDns
     {
-        $responses = array_map(fn ($fixture) => $this->response($fixture), array_merge(['login-ok'], $fixtures));
+        return $this->quickDnsWithLogin('login-ok', $fixtures);
+    }
+
+    /**
+     * Like quickDns(), with the given fixture as the answer to the login request.
+     */
+    protected function quickDnsWithLogin(string $login, array $fixtures = []): QuickDns
+    {
+        $responses = array_map(fn ($fixture) => $this->response($fixture), array_merge([$login], $fixtures));
         $stack = HandlerStack::create(new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
 
