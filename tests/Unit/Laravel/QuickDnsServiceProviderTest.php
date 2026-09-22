@@ -47,10 +47,17 @@ final class QuickDnsServiceProviderTest extends TestCase
 
     public function test_config_defaults_come_from_env()
     {
-        $config = require __DIR__.'/../../../config/quickdns.php';
+        // phpunit.xml sets both to "" in $_ENV and $_SERVER, which env() reads first.
+        $saved = [$_ENV, $_SERVER];
+        $_ENV['QUICKDNS_EMAIL'] = $_SERVER['QUICKDNS_EMAIL'] = 'env@example.dk';
+        $_ENV['QUICKDNS_PASSWORD'] = $_SERVER['QUICKDNS_PASSWORD'] = 'env-secret';
+        try {
+            $config = require __DIR__.'/../../../config/quickdns.php';
+        } finally {
+            [$_ENV, $_SERVER] = $saved;
+        }
 
-        $this->assertSame(['email', 'password', 'client'], array_keys($config));
-        $this->assertNull($config['client']);
+        $this->assertSame(['email' => 'env@example.dk', 'password' => 'env-secret', 'client' => null], $config);
     }
 
     public function test_config_can_be_published()

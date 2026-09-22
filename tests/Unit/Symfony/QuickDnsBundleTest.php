@@ -4,6 +4,7 @@ namespace QuickDns\Tests\Unit\Symfony;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use QuickDns\QuickDns;
 use QuickDns\Symfony\QuickDnsBundle;
@@ -53,10 +54,20 @@ final class QuickDnsBundleTest extends TestCase
         $this->assertSame('flyvende-agurk-pingvin.dk', $container->get('test.quickdns')->getZones()[0]->domain);
     }
 
-    public function test_email_and_password_are_required()
+    #[DataProvider('incompleteConfig')]
+    public function test_email_and_password_are_required(array $config)
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->container(['email' => 'test@example.dk']);
+        $this->container($config);
+    }
+
+    public static function incompleteConfig(): array
+    {
+        return [
+            'no password' => [['email' => 'test@example.dk']],
+            'no email' => [['password' => 'secret']],
+            'empty email' => [['email' => '', 'password' => 'secret']],
+        ];
     }
 
     public function test_extension_alias()
