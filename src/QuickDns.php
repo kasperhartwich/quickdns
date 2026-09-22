@@ -72,12 +72,14 @@ class QuickDns
     public static function lazy($email, $password, ?ClientInterface $client = null): static
     {
         // Go through the constructor, so a subclass' own constructor still runs.
-        // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy.
+        // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy, and
+        // restored afterwards, so a lazy() call inside one does not clear the outer call's flag.
+        $previous = self::$constructLazily;
         self::$constructLazily = static::class;
         try {
             return new static($email, $password, $client);
         } finally {
-            self::$constructLazily = null;
+            self::$constructLazily = $previous;
         }
     }
 

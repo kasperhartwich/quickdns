@@ -104,6 +104,32 @@ final class LazyTest extends TestCase
         $this->assertInstanceOf(QuickDns::class, $quickDns->inner);
     }
 
+    public function test_lazy_inside_a_subclass_constructor_keeps_the_outer_call_lazy()
+    {
+        $class = get_class(new class('a', 'b', new Client(['handler' => HandlerStack::create(new MockHandler([$this->response('login-ok')]))])) extends QuickDns
+        {
+            public static $buildInner = false;
+
+            public $inner;
+
+            public function __construct($email, $password, $client = null)
+            {
+                if (self::$buildInner) {
+                    $this->inner = QuickDns::lazy($email, $password);
+                }
+                parent::__construct($email, $password, $client);
+            }
+        });
+        $class::$buildInner = true;
+        $stack = HandlerStack::create(new MockHandler([]));
+        $stack->push(Middleware::history($this->history));
+
+        $quickDns = $class::lazy('a', 'b', new Client(['handler' => $stack]));
+
+        $this->assertSame([], $this->history);
+        $this->assertInstanceOf(QuickDns::class, $quickDns->inner);
+    }
+
     public function test_constructor_after_lazy_logs_in_again()
     {
         QuickDns::lazy('a', 'b');
