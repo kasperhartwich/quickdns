@@ -75,7 +75,7 @@ class QuickDns
         $zones = [];
         $response = $this->request('zones');
         $html = new Crawler($response);
-        foreach ($html->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]') as $node) {
+        foreach ($html->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]') as $node) {
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
                 $zone_data[] = trim($td->nodeValue);
@@ -118,7 +118,7 @@ class QuickDns
         $response = $this->request('templates');
 
         return (new Crawler($response))
-            ->filterXPath('//table[@id="zone_table"]/tr[not(@class="listheader")]')
+            ->filterXPath('//table[@id="zone_table"]//tr[not(@class="listheader")]')
             ->each(function (Crawler $tr) {
                 preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
                 $template = new Template($this, $tr->filterXPath('//td[1]')->text());
@@ -157,7 +157,7 @@ class QuickDns
         $response = $this->request('groups');
 
         return array_filter((new Crawler($response))
-            ->filterXPath('//table[@id="group_table"]/tr')
+            ->filterXPath('//table[@id="group_table"]//tr')
             ->each(function (Crawler $tr) {
                 if (str_contains($tr->html(), 'listheader')) {
                     return;
