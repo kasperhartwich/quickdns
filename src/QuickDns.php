@@ -5,6 +5,8 @@ namespace QuickDns;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
@@ -245,6 +247,19 @@ class QuickDns
      */
     public function request($function, $options = [], $method = self::METHOD_GET): string
     {
+        //Apparently QuickDns declare the html as xml.
+        return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $this->send($function, $options, $method));
+    }
+
+    /**
+     * Send a request and return the raw response body.
+     *
+     * @param  string  $function  Path relative to https://www.quickdns.dk/, or an absolute URL
+     * @param  array  $options
+     * @param  string  $method
+     */
+    private function send($function, $options = [], $method = self::METHOD_GET): string
+    {
         if (empty($options)) {
             $options = [];
         } elseif ($method == self::METHOD_POST) {
@@ -253,9 +268,8 @@ class QuickDns
             $options = ['query' => $options];
         }
         $options['cookies'] = $this->cookieJar;
-        $response = $this->client->request($method, $this->base_uri.$function, $options);
+        $uri = UriResolver::resolve(new Uri($this->base_uri), new Uri($function));
 
-        //Apparently QuickDns declare the html as xml.
-        return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $response->getBody()->getContents());
+        return $this->client->request($method, $uri, $options)->getBody()->getContents();
     }
 }

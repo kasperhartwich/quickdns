@@ -96,4 +96,16 @@ final class QuickDnsTest extends TestCase
     {
         $this->assertSame(738, $this->quickDns(['groups'])->getGroup('test-group')->id);
     }
+
+    public function test_request_resolves_paths_like_base_uri()
+    {
+        $quickDns = $this->quickDns(['zones', 'zones', 'zones']);
+
+        $quickDns->request('zones');
+        $this->assertSame('zones', $this->lastRequestUri());
+        $quickDns->request('/zones');
+        $this->assertSame('zones', $this->lastRequestUri());
+        $quickDns->request('https://www.quickdns.dk/zones');
+        $this->assertSame('zones', $this->lastRequestUri());
+    }
 }
