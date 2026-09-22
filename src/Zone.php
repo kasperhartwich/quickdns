@@ -53,6 +53,20 @@ class Zone extends BaseModel
     }
 
     /**
+     * Get the zone's records, in the order QuickDNS lists them.
+     *
+     * @return Record[]
+     */
+    public function getRecords(): array
+    {
+        if (! $this->id) {
+            throw new \BadFunctionCallException('Zone is not created yet.');
+        }
+
+        return $this->quickdns->getRecords($this);
+    }
+
+    /**
      * Delete Zone
      *
      * @return bool
