@@ -304,14 +304,7 @@ class QuickDns
      */
     public function command($function, $options = [], $method = self::METHOD_GET): Crawler
     {
-        // Go through request(), which subclasses may override. It strips an XML declaration with a
-        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
-        $body = $this->request($function, $options, $method);
-        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
-            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
-        }
-        $xml = new Crawler();
-        $xml->addXmlContent($body);
+        $xml = $this->xml($function, $options, $method);
 
         $status = $xml->filterXPath('//response/status');
         if (! $status->count()) {
@@ -321,6 +314,30 @@ class QuickDns
             $statustext = $xml->filterXPath('//response/statustext');
             throw new CommandFailed($statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()));
         }
+
+        return $xml;
+    }
+
+    /**
+     * Request an XML answer and parse it. Commands answer <status>OK</status> or ERROR, but
+     * submitzonechange answers a Danish status line instead, so the OK check lives in command().
+     *
+     * @param  string  $function
+     * @param  array  $options
+     * @param  string  $method
+     *
+     * @internal
+     */
+    public function xml($function, $options = [], $method = self::METHOD_GET): Crawler
+    {
+        // Go through request(), which subclasses may override. It strips an XML declaration with a
+        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
+        $body = $this->request($function, $options, $method);
+        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
+        $xml = new Crawler();
+        $xml->addXmlContent($body);
 
         return $xml;
     }
