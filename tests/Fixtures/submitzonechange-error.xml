@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<response>
+<badrecord>11</badrecord>
+<changedrecord>10</changedrecord>
+<changedrecord>11</changedrecord>
+<color>#d3222a</color>
+<error>'r&amp;oslash;dgr&amp;oslash;d' indeholder ugyldige tegn.&lt;br&gt;</error>
+<status>Status: 1 fejl i zonen</status>
+<actions>
+<action>insertrow</action>
+<row>11</row>
+
+</actions>
+<actions>
+<value>rødgrød</value>
+<record>badrow</record>
+<row>11</row>
+<locked>0</locked>
+<priority>&amp;nbsp;</priority>
+<type>TXT</type>
+<ttl>3600</ttl>
+<action>changerow</action>
+<changed>1</changed>
+
+</actions>
+
+</response>

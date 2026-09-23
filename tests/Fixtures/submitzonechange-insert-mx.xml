@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<response>
+<changedrecord>5</changedrecord>
+<changedrecord>6</changedrecord>
+<changedrecord>7</changedrecord>
+<changedrecord>8</changedrecord>
+<color>#66bc29</color>
+<status>Status: Ingen fejl i zonen</status>
+<actions>
+<action>insertrow</action>
+<row>8</row>
+
+</actions>
+<actions>
+<type>MX</type>
+<ttl>3600</ttl>
+<changed>1</changed>
+<action>changerow</action>
+<record>@</record>
+<row>8</row>
+<value>mx1.example.dk.</value>
+<locked>0</locked>
+<priority>10</priority>
+
+</actions>
+
+</response>
