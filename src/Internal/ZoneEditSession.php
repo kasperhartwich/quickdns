@@ -88,6 +88,7 @@ final class ZoneEditSession
     public function change(array $parameters, ?Record $attempted = null): void
     {
         $this->start();
+        $this->lastChangedRow = null;
         $response = ZoneChangeResponse::fromXml($this->quickDns->xml('submitzonechange', [
             'seq' => ++$this->sequence,
             'zkey' => $this->key,

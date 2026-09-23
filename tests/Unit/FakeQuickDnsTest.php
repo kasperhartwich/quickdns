@@ -273,4 +273,40 @@ final class FakeQuickDnsTest extends TestCase
         $zone->deleteRecord($zone->getRecords()[4]);
         $this->assertCount(4, $zone->getRecords());
     }
+
+    public function test_saving_with_the_wrong_sequence_number_saves_nothing()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $client = new Client(['handler' => HandlerStack::create($fake), 'cookies' => true]);
+        $client->request('POST', 'https://www.quickdns.dk/login', ['form_params' => ['email' => 'test@example.dk', 'password' => 'secret']]);
+        $page = (string) $client->request('GET', 'https://www.quickdns.dk/editzone', ['query' => ['id' => 1000]])->getBody();
+        preg_match("/init\('([0-9a-f]+)'/", $page, $match);
+
+        $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => ['action' => 'initial', 'seq' => 0, 'zkey' => $match[1]]]);
+        $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => ['action' => 'edit', 'seq' => 1, 'zkey' => $match[1], 'row' => -1, 'record' => 'www', 'ttl' => 3600, 'type' => 'A', 'priority' => '', 'value' => '192.0.2.10']]);
+        // The next sequence number instead of the last one: the live service saves nothing.
+        $client->request('GET', 'https://www.quickdns.dk/editzonedone', ['query' => ['save' => 1, 'seq' => 2, 'zkey' => $match[1]]]);
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'));
+    }
+
+    public function test_the_fake_rejects_what_quickdns_rejects()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $client = new Client(['handler' => HandlerStack::create($fake), 'cookies' => true]);
+        $client->request('POST', 'https://www.quickdns.dk/login', ['form_params' => ['email' => 'test@example.dk', 'password' => 'secret']]);
+        $page = (string) $client->request('GET', 'https://www.quickdns.dk/editzone', ['query' => ['id' => 1000]])->getBody();
+        preg_match("/init\('([0-9a-f]+)'/", $page, $match);
+
+        // Straight at the endpoint, so the library's own validation cannot get in the way.
+        $answer = (string) $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => [
+            'action' => 'edit', 'seq' => 1, 'zkey' => $match[1], 'row' => -1,
+            'record' => 'bad', 'ttl' => 3600, 'type' => 'TXT', 'priority' => '', 'value' => 'say "hi"',
+        ]])->getBody();
+
+        $this->assertStringContainsString('indeholder ugyldige tegn', mb_convert_encoding($answer, 'UTF-8', 'ISO-8859-1'));
+        $this->assertStringContainsString('<badrecord>', $answer);
+    }
 }

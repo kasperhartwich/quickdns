@@ -61,7 +61,7 @@ final class FakeQuickDns
      * Open zone edit sessions, keyed by session key: the pending table, the rows marked bad, and
      * the errors reported so far.
      *
-     * @var array<string, array{zone: int, rows: array<int, ?array>, bad: int[], errors: string[]}>
+     * @var array<string, array{zone: int, rows: array<int, ?array>, bad: int[], errors: string[], seq: int}>
      */
     private array $editSessions = [];
 
@@ -240,6 +240,7 @@ final class FakeQuickDns
             return $this->changeXml([], ['Ukendt session.'], [0]);
         }
         $session = &$this->editSessions[$key];
+        $session['seq'] = (int) ($query['seq'] ?? 0);
         $action = (string) ($query['action'] ?? '');
         $actions = [];
 
@@ -300,7 +301,9 @@ final class FakeQuickDns
         $key = (string) ($query['zkey'] ?? '');
         if (isset($this->editSessions[$key])) {
             $session = $this->editSessions[$key];
-            if ((string) ($query['save'] ?? '0') === '1' && $session['bad'] === []) {
+            // Like the live service: the wrong sequence number saves nothing, without a word.
+            $sequenceMatches = (int) ($query['seq'] ?? -1) === $session['seq'];
+            if ((string) ($query['save'] ?? '0') === '1' && $session['bad'] === [] && $sequenceMatches) {
                 $records = array_values(array_filter($session['rows']));
                 // QuickDNS sorts the zone when it saves, template records first.
                 usort($records, fn ($a, $b) => [$a['template'] === null, $a['name'], $a['type']] <=> [$b['template'] === null, $b['name'], $b['type']]);
@@ -504,7 +507,7 @@ final class FakeQuickDns
         }
 
         $key = bin2hex(random_bytes(32));
-        $this->editSessions[$key] = ['zone' => $id, 'rows' => $this->pendingRows($id), 'bad' => [], 'errors' => []];
+        $this->editSessions[$key] = ['zone' => $id, 'rows' => $this->pendingRows($id), 'bad' => [], 'errors' => [], 'seq' => 0];
 
         return $this->page('Mine zoner', '<p>Zone: '.$this->e($this->zones[$id]['domain']).'</p>'
             .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', false); };</script>'
