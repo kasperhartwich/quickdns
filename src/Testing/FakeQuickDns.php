@@ -57,6 +57,17 @@ final class FakeQuickDns
     /** @var RequestInterface[] */
     private array $requests = [];
 
+    /**
+     * Open zone edit sessions, keyed by session key: the pending table, the rows marked bad, and
+     * the errors reported so far.
+     *
+     * @var array<string, array{zone: int, rows: array<int, ?array>, bad: int[], errors: string[]}>
+     */
+    private array $editSessions = [];
+
+    /** @var string[] Errors to answer the next changes with, set by failNextChange() */
+    private array $forcedErrors = [];
+
     public function __construct(string $email = 'test@example.dk', string $password = 'secret')
     {
         $this->email = $email;
@@ -174,6 +185,191 @@ final class FakeQuickDns
         return $this->requests;
     }
 
+
+    /**
+     * Make the next change answer with this error, as QuickDNS would, so a test can exercise the
+     * rejected path without guessing what the service dislikes.
+     */
+    public function failNextChange(string $error = 'Noget gik galt.'): void
+    {
+        $this->forcedErrors[] = $error;
+    }
+
+    /**
+     * The zone's saved records, as arrays: name, ttl, type, priority, value, template.
+     *
+     * @return array<int, array>
+     */
+    public function recordsOf(string $domain): array
+    {
+        return $this->zones[$this->zoneId($domain)]['records'];
+    }
+
+    /**
+     * True while an edit session on the zone has changes that were never saved or discarded.
+     */
+    public function hasPendingChanges(string $domain): bool
+    {
+        $id = $this->zoneId($domain);
+        foreach ($this->editSessions as $session) {
+            if ($session['zone'] === $id && $session['rows'] !== $this->pendingRows($id)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The pending table of a zone: row 0 is the header, then one row per record.
+     *
+     * @return array<int, ?array>
+     */
+    private function pendingRows(int $id): array
+    {
+        return array_merge([null], array_values($this->zones[$id]['records']));
+    }
+
+    /**
+     * submitzonechange: one change against the pending table.
+     */
+    private function zoneChange(array $query): PromiseInterface
+    {
+        $key = (string) ($query['zkey'] ?? '');
+        if (! isset($this->editSessions[$key])) {
+            return $this->changeXml([], ['Ukendt session.'], [0]);
+        }
+        $session = &$this->editSessions[$key];
+        $action = (string) ($query['action'] ?? '');
+        $actions = [];
+
+        if ($action === 'edit') {
+            $record = [
+                'name' => (string) ($query['record'] ?? ''),
+                'ttl' => ($query['ttl'] ?? '') === '' ? null : (int) $query['ttl'],
+                'type' => (string) ($query['type'] ?? ''),
+                'priority' => ($query['priority'] ?? '') === '' ? null : (int) $query['priority'],
+                'value' => (string) ($query['value'] ?? ''),
+                'template' => null,
+            ];
+            // QuickDNS keeps a priority for MX and SRV only.
+            if (! in_array($record['type'], ['MX', 'SRV'], true)) {
+                $record['priority'] = null;
+            }
+            $row = (int) ($query['row'] ?? -1);
+            if ($row === -1) {
+                $row = count($session['rows']);
+                $session['rows'][$row] = null;
+                $actions[] = ['action' => 'insertrow', 'row' => $row];
+            } elseif (! isset($session['rows'][$row])) {
+                return $this->changeXml($session['rows'], ['Ukendt r&aelig;kke.'], [$row]);
+            } elseif ($session['rows'][$row]['template'] !== null) {
+                // Same as the live service: a template row cannot be touched on the zone.
+                return new FulfilledPromise(new Response(500, ['Content-Type' => 'text/html'], 'Internal Server Error'));
+            }
+            $session['rows'][$row] = $record;
+            $actions[] = ['action' => 'changerow', 'row' => $row, 'record' => $record];
+
+            if (($error = $this->rejects($record)) !== null) {
+                $session['bad'][] = $row;
+                $session['errors'][] = $error;
+            }
+        } elseif ($action === 'delete') {
+            $row = (int) ($query['row'] ?? 0);
+            if (! isset($session['rows'][$row])) {
+                return $this->changeXml($session['rows'], ['Ukendt r&aelig;kke.'], [$row]);
+            }
+            if ($session['rows'][$row]['template'] !== null) {
+                return new FulfilledPromise(new Response(500, ['Content-Type' => 'text/html'], 'Internal Server Error'));
+            }
+            array_splice($session['rows'], $row, 1);
+            $session['bad'] = [];
+            $session['errors'] = [];
+            $actions[] = ['action' => 'deleterow', 'row' => $row];
+        }
+
+        return $this->changeXml($actions, $session['errors'], $session['bad']);
+    }
+
+    /**
+     * editzonedone: save the pending table, or throw it away. A session holding a rejected record
+     * saves nothing at all, exactly like the live service.
+     */
+    private function zoneEditDone(array $query): PromiseInterface
+    {
+        $key = (string) ($query['zkey'] ?? '');
+        if (isset($this->editSessions[$key])) {
+            $session = $this->editSessions[$key];
+            if ((string) ($query['save'] ?? '0') === '1' && $session['bad'] === []) {
+                $records = array_values(array_filter($session['rows']));
+                // QuickDNS sorts the zone when it saves, template records first.
+                usort($records, fn ($a, $b) => [$a['template'] === null, $a['name'], $a['type']] <=> [$b['template'] === null, $b['name'], $b['type']]);
+                $this->zones[$session['zone']]['records'] = $records;
+                $this->zones[$session['zone']]['updated'] = $this->now();
+            }
+            unset($this->editSessions[$key]);
+        }
+
+        return $this->zonesPage();
+    }
+
+    /**
+     * Why QuickDNS would reject a record, or null when it would not.
+     */
+    private function rejects(array $record): ?string
+    {
+        if ($this->forcedErrors !== []) {
+            return $this->e((string) array_shift($this->forcedErrors));
+        }
+        foreach (['name', 'value'] as $field) {
+            if (trim((string) $record[$field]) === '' || preg_match('/["\\\']|[^\x20-\x7e]/', (string) $record[$field])) {
+                return "'".$this->e((string) $record[$field])."' indeholder ugyldige tegn.&lt;br&gt;";
+            }
+        }
+        if (! in_array($record['type'], ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'TXT'], true)) {
+            return "'".$this->e((string) $record['type'])."' er ikke en gyldig type.&lt;br&gt;";
+        }
+
+        return null;
+    }
+
+    /**
+     * The XML submitzonechange answers: a Danish status line, the errors so far, the bad rows and
+     * what changed in the table.
+     *
+     * @param  array<int, array>  $actions
+     * @param  string[]  $errors
+     * @param  int[]  $bad
+     */
+    private function changeXml(array $actions, array $errors, array $bad): PromiseInterface
+    {
+        $xml = '<?xml version="1.0" encoding="ISO-8859-1"?>'."\n<response>\n";
+        foreach (array_unique($bad) as $row) {
+            $xml .= '<badrecord>'.$row."</badrecord>\n";
+        }
+        $xml .= '<color>'.($errors === [] ? '#66bc29' : '#d3222a')."</color>\n";
+        foreach ($errors as $error) {
+            $xml .= '<error>'.$error."</error>\n";
+        }
+        $xml .= '<status>Status: '.($errors === [] ? 'Ingen fejl i zonen' : count($errors).' fejl i zonen')."</status>\n";
+        foreach ($actions as $action) {
+            $xml .= "<actions>\n<action>".$action['action']."</action>\n<row>".$action['row']."</row>\n";
+            if (isset($action['record'])) {
+                $record = $action['record'];
+                $xml .= '<record>'.$this->e($record['name'])."</record>\n"
+                    .'<ttl>'.($record['ttl'] ?? '&amp;nbsp;')."</ttl>\n"
+                    .'<type>'.$this->e($record['type'])."</type>\n"
+                    .'<priority>'.($record['priority'] ?? '&amp;nbsp;')."</priority>\n"
+                    .'<value>'.$this->e($record['value'])."</value>\n"
+                    ."<locked>0</locked>\n<changed>1</changed>\n";
+            }
+            $xml .= "</actions>\n";
+        }
+        $xml .= "</response>\n";
+
+        return new FulfilledPromise(new Response(200, ['Content-Type' => 'text/xml'], mb_convert_encoding($xml, 'ISO-8859-1', 'UTF-8')));
+    }
+
     /**
      * Guzzle handler.
      */
@@ -197,6 +393,8 @@ final class FakeQuickDns
             'templates' => $this->templatesPage(),
             'groups' => $this->groupsPage(),
             'editzone' => $this->editZonePage((int) ($query['id'] ?? 0)),
+            'submitzonechange' => $this->zoneChange($query),
+            'editzonedone' => $this->zoneEditDone($query),
             'addzone' => $this->addZoneCommand((string) ($query['zone'] ?? '')),
             'delzone' => $this->deleteCommand($this->zones, (int) ($query['id'] ?? 0), 'Zonen er slettet', 'Zonen findes ikke'),
             'addtemplate' => $this->addTemplateCommand((string) ($query['zone'] ?? '')),
@@ -305,7 +503,11 @@ final class FakeQuickDns
                 ."</tr>\n";
         }
 
+        $key = bin2hex(random_bytes(32));
+        $this->editSessions[$key] = ['zone' => $id, 'rows' => $this->pendingRows($id), 'bad' => [], 'errors' => []];
+
         return $this->page('Mine zoner', '<p>Zone: '.$this->e($this->zones[$id]['domain']).'</p>'
+            .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', false); };</script>'
             .'<table class="listtable records" id="zone_table"><tr class="listheader">'
             .'<th class="listheader">Record</th><th class="listheader">TTL</th><th class="listheader">Type</th>'
             .'<th class="listheader">Prioritet</th><th class="listheader">Værdi</th><th class="listheader">Ret</th><th class="listheader">Slet</th>'

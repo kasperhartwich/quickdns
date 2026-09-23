@@ -7,7 +7,12 @@ use GuzzleHttp\HandlerStack;
 use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
+use QuickDns\Exceptions\RecordLocked;
+use QuickDns\Exceptions\RecordRejected;
 use QuickDns\Group;
+use QuickDns\Record;
+use QuickDns\RecordSet;
+use QuickDns\RecordType;
 use QuickDns\QuickDns;
 use QuickDns\Template;
 use QuickDns\Testing\FakeQuickDns;
@@ -179,5 +184,93 @@ final class FakeQuickDnsTest extends TestCase
         $xml = (new FakeQuickDns())->quickDns()->command('addzone', ['zone' => 'flyvende-agurk-pingvin.dk', 'getdata' => 0]);
 
         $this->assertSame((string) FakeQuickDns::USER, $xml->filterXPath('//response/user')->text());
+    }
+
+    public function test_writing_records_through_an_edit_session()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $fake->addRecord('flyvende-agurk-pingvin.dk', 'old', 'A', '192.0.2.1');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $zone->edit(function (RecordSet $records) {
+            $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+            $records->add('@', RecordType::MX, 'mx1.example.dk.', ttl: 3600, priority: 10);
+            $records->remove($records->sole(name: 'old'));
+        });
+
+        $summary = array_map(fn (Record $r) => "{$r->name} {$r->type} {$r->value}", $zone->getRecords());
+        $this->assertSame([
+            '@ NS ns1.quickdns.dk.',
+            '@ NS ns2.quickdns.dk.',
+            '@ NS ns3.quickdns.dk.',
+            '@ NS ns4.quickdns.dk.',
+            '@ MX mx1.example.dk.',
+            'www A 192.0.2.10',
+        ], $summary);
+    }
+
+    public function test_a_discarded_edit_changes_nothing()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        try {
+            $zone->edit(function (RecordSet $records) {
+                $records->add('www', 'A', '192.0.2.10');
+                throw new \RuntimeException('no');
+            });
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'));
+        $this->assertFalse($fake->hasPendingChanges('flyvende-agurk-pingvin.dk'));
+    }
+
+    public function test_a_rejected_record_saves_nothing_at_all()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+        $fake->failNextChange('Noget gik galt.');
+
+        try {
+            $zone->edit(function (RecordSet $records) {
+                $records->add('www', 'A', '192.0.2.10');
+                $records->add('mail', 'A', '192.0.2.11');
+            });
+            $this->fail('Expected RecordRejected.');
+        } catch (RecordRejected $e) {
+            $this->assertSame('Noget gik galt.', $e->getMessage());
+        }
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'), 'Not even the accepted record is saved.');
+    }
+
+    public function test_template_records_are_locked_in_the_fake_too()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $this->expectException(RecordLocked::class);
+        $zone->edit(fn (RecordSet $records) => $records->remove($records->all()[0]));
+    }
+
+    public function test_one_shot_helpers()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $added = $zone->addRecord('www', 'A', '192.0.2.10', ttl: 3600);
+        $this->assertSame('www', $added->name);
+
+        $zone->replaceRecord($added, $added->withValue('192.0.2.11'));
+        $this->assertSame('192.0.2.11', $zone->getRecords()[4]->value);
+
+        $zone->deleteRecord($zone->getRecords()[4]);
+        $this->assertCount(4, $zone->getRecords());
     }
 }
