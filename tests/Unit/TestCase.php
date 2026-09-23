@@ -41,16 +41,31 @@ class TestCase extends \PHPUnit\Framework\TestCase
         return new QuickDns('test@example.dk', 'secret', new Client(['handler' => $stack]));
     }
 
+    /**
+     * A recorded page or command answer. Command answers are .xml, pages are .html.
+     */
     protected function fixture(string $name): string
     {
-        return file_get_contents(__DIR__.'/../Fixtures/'.$name.'.html');
+        return file_get_contents($this->fixturePath($name) ?? throw new \InvalidArgumentException('No fixture '.$name));
     }
 
     protected function response(string $fixture): Response
     {
-        $body = is_file(__DIR__.'/../Fixtures/'.$fixture.'.html') ? $this->fixture($fixture) : $fixture;
+        $path = $this->fixturePath($fixture);
+        $type = $path !== null && str_ends_with($path, '.xml') ? 'text/xml' : 'text/html';
 
-        return new Response(200, ['Content-Type' => 'text/html'], $body);
+        return new Response(200, ['Content-Type' => $type], $path !== null ? file_get_contents($path) : $fixture);
+    }
+
+    private function fixturePath(string $name): ?string
+    {
+        foreach (['.html', '.xml'] as $extension) {
+            if (is_file($path = __DIR__.'/../Fixtures/'.$name.$extension)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     /**

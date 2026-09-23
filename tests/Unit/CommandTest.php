@@ -42,4 +42,13 @@ final class CommandTest extends TestCase
         $this->expectExceptionMessage('QuickDNS answered ERROR');
         $this->quickDns(['<?xml version="1.0" encoding="ISO-8859-1"?><response><status>ERROR</status></response>'])->command('delzone', ['id' => 1]);
     }
+
+    public function test_xml_parses_without_checking_the_status()
+    {
+        // submitzonechange answers a Danish status line, not OK/ERROR, so xml() must not judge it.
+        $xml = $this->quickDns(['submitzonechange-insert'])->xml('submitzonechange', ['action' => 'initial']);
+
+        $this->assertSame('Status: Ingen fejl i zonen', $xml->filterXPath('//response/status')->text());
+        $this->assertSame('submitzonechange?action=initial', $this->lastRequestUri());
+    }
 }

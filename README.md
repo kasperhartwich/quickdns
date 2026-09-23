@@ -75,7 +75,60 @@ foreach ($quickDns->getZone('example.dk')->getRecords() as $record) {
 
 Each `QuickDns\Record` has `name` (as QuickDNS shows it: `@`, `www`, `*`), `type`, `ttl` and
 `priority` (`null` when blank), `value`, `row` (the record's row on the zone page) and `template`
-(the template that added the record, or `null`). Records cannot be created or changed yet.
+(the template that added the record, or `null`). `isLocked()` is true for template records: they
+can only be changed on the template itself.
+
+### Writing records
+
+`edit()` runs one QuickDNS edit session: every change is sent as it is made, and the lot is saved
+when the closure returns.
+
+```php
+use QuickDns\RecordSet;
+use QuickDns\RecordType;
+
+$zone = $quickDns->getZone('example.dk');
+
+$zone->edit(function (RecordSet $records) {
+    $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+    $records->add('@', RecordType::MX, 'mx1.example.dk.', ttl: 3600, priority: 10);
+
+    $spf = $records->sole(name: '@', type: RecordType::TXT);
+    $records->replace($spf, $spf->withValue('v=spf1 include:_spf.example.dk ~all'));
+
+    $records->remove($records->sole(name: 'old', type: 'A'));
+});
+```
+
+Find records with `find(name:, type:, value:)`, `where(...)` or `sole(...)`, which throws unless
+exactly one matches. `all()` returns them in page order, and the set is iterable and countable.
+
+**Nothing is saved unless everything works.** If the closure throws, or QuickDNS rejects a change,
+the session is discarded. That is QuickDNS' own behaviour: it saves nothing from a session that
+holds a rejected record, not even the changes it accepted.
+
+For a single change there are one-shot helpers, each its own session:
+
+```php
+$record = $zone->addRecord('www', 'A', '192.0.2.10', ttl: 3600);
+$zone->replaceRecord($record, $record->withValue('192.0.2.11'));
+$zone->deleteRecord($record);
+```
+
+What QuickDNS accepts, checked against the service:
+
+| | |
+|---|---|
+| Types | `RecordType`: A, AAAA, CNAME, MX, NS, PTR, SPF, SRV, TXT |
+| Priority | MX and SRV only. Changing the type to another one clears it. |
+| TTL | Any number of seconds, or `null` to inherit. `Record::TTLS` holds the values QuickDNS' own dropdown offers. |
+| Names and values | Printable ASCII, and never `"`, `'` or `\`. Danish letters are rejected here, although they are fine in a template or group name. |
+| Duplicates | QuickDNS accepts them silently, so `add()` refuses a record the zone already has. Pass `allowDuplicates: true` to add it anyway. |
+| Template records | Cannot be changed or deleted on the zone: `RecordLocked`. |
+
+A record that breaks one of the first four rules throws `InvalidRecord` before anything is sent.
+What only QuickDNS can judge throws `RecordRejected`, which carries its Danish messages in
+`errors()`, the rows in `rows()` and the records in `records()`.
 
 ### Templates and groups
 
@@ -120,6 +173,10 @@ Every exception from QuickDNS implements `QuickDns\Exceptions\QuickDnsException`
 | `LoginFailed` | Wrong email or password | `InvalidArgumentException` |
 | `CommandFailed` | QuickDNS rejected a command. The message is QuickDNS' own, in Danish, e.g. `Zonen eksisterer allerede` | `InvalidArgumentException` |
 | `NotFound` | `getZone()`, `getTemplate()` or `getGroup()` found nothing | `UnexpectedValueException` |
+| `InvalidRecord` | A record QuickDNS would reject, caught before sending | `InvalidArgumentException` |
+| `RecordLocked` | The record belongs to a template | `InvalidRecord` |
+| `RecordRejected` | QuickDNS rejected a change, so the edit was discarded | `CommandFailed` |
+| `StaleRecord` | The record was replaced or removed earlier in the same edit | `InvalidArgumentException` |
 | `UnrecognisedPage` | QuickDNS answered with something unexpected, e.g. a logged-out page | `UnexpectedValueException` |
 
 ```php
@@ -196,8 +253,13 @@ $quickDns = $fake->quickDns(); // or new QuickDns('test@example.dk', 'secret', $
 
 $fake->hasZone('new.dk');           // true
 $fake->templatesOf('existing.dk');  // ['standard']
+$fake->recordsOf('existing.dk');    // the zone's records after your writes
 $fake->requests();                  // every request it answered
 ```
+
+The fake writes records too, with the same rules, the same locked template rows and the same
+all-or-nothing saving. `$fake->failNextChange('...')` makes the next change fail the way QuickDNS
+would, and `$fake->hasPendingChanges('example.dk')` shows whether an edit was left open.
 
 Like QuickDNS, every new zone gets four NS records from the template "QuickDNS global". To keep
 your own middleware, use the fake as the handler: `HandlerStack::create($fake)`.

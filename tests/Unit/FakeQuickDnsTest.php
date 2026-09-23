@@ -7,7 +7,12 @@ use GuzzleHttp\HandlerStack;
 use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
+use QuickDns\Exceptions\RecordLocked;
+use QuickDns\Exceptions\RecordRejected;
 use QuickDns\Group;
+use QuickDns\Record;
+use QuickDns\RecordSet;
+use QuickDns\RecordType;
 use QuickDns\QuickDns;
 use QuickDns\Template;
 use QuickDns\Testing\FakeQuickDns;
@@ -179,5 +184,129 @@ final class FakeQuickDnsTest extends TestCase
         $xml = (new FakeQuickDns())->quickDns()->command('addzone', ['zone' => 'flyvende-agurk-pingvin.dk', 'getdata' => 0]);
 
         $this->assertSame((string) FakeQuickDns::USER, $xml->filterXPath('//response/user')->text());
+    }
+
+    public function test_writing_records_through_an_edit_session()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $fake->addRecord('flyvende-agurk-pingvin.dk', 'old', 'A', '192.0.2.1');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $zone->edit(function (RecordSet $records) {
+            $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+            $records->add('@', RecordType::MX, 'mx1.example.dk.', ttl: 3600, priority: 10);
+            $records->remove($records->sole(name: 'old'));
+        });
+
+        $summary = array_map(fn (Record $r) => "{$r->name} {$r->type} {$r->value}", $zone->getRecords());
+        $this->assertSame([
+            '@ NS ns1.quickdns.dk.',
+            '@ NS ns2.quickdns.dk.',
+            '@ NS ns3.quickdns.dk.',
+            '@ NS ns4.quickdns.dk.',
+            '@ MX mx1.example.dk.',
+            'www A 192.0.2.10',
+        ], $summary);
+    }
+
+    public function test_a_discarded_edit_changes_nothing()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        try {
+            $zone->edit(function (RecordSet $records) {
+                $records->add('www', 'A', '192.0.2.10');
+                throw new \RuntimeException('no');
+            });
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'));
+        $this->assertFalse($fake->hasPendingChanges('flyvende-agurk-pingvin.dk'));
+    }
+
+    public function test_a_rejected_record_saves_nothing_at_all()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+        $fake->failNextChange('Noget gik galt.');
+
+        try {
+            $zone->edit(function (RecordSet $records) {
+                $records->add('www', 'A', '192.0.2.10');
+                $records->add('mail', 'A', '192.0.2.11');
+            });
+            $this->fail('Expected RecordRejected.');
+        } catch (RecordRejected $e) {
+            $this->assertSame('Noget gik galt.', $e->getMessage());
+        }
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'), 'Not even the accepted record is saved.');
+    }
+
+    public function test_template_records_are_locked_in_the_fake_too()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $this->expectException(RecordLocked::class);
+        $zone->edit(fn (RecordSet $records) => $records->remove($records->all()[0]));
+    }
+
+    public function test_one_shot_helpers()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $zone = $fake->quickDns()->getZone('flyvende-agurk-pingvin.dk');
+
+        $added = $zone->addRecord('www', 'A', '192.0.2.10', ttl: 3600);
+        $this->assertSame('www', $added->name);
+
+        $zone->replaceRecord($added, $added->withValue('192.0.2.11'));
+        $this->assertSame('192.0.2.11', $zone->getRecords()[4]->value);
+
+        $zone->deleteRecord($zone->getRecords()[4]);
+        $this->assertCount(4, $zone->getRecords());
+    }
+
+    public function test_saving_with_the_wrong_sequence_number_saves_nothing()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $client = new Client(['handler' => HandlerStack::create($fake), 'cookies' => true]);
+        $client->request('POST', 'https://www.quickdns.dk/login', ['form_params' => ['email' => 'test@example.dk', 'password' => 'secret']]);
+        $page = (string) $client->request('GET', 'https://www.quickdns.dk/editzone', ['query' => ['id' => 1000]])->getBody();
+        preg_match("/init\('([0-9a-f]+)'/", $page, $match);
+
+        $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => ['action' => 'initial', 'seq' => 0, 'zkey' => $match[1]]]);
+        $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => ['action' => 'edit', 'seq' => 1, 'zkey' => $match[1], 'row' => -1, 'record' => 'www', 'ttl' => 3600, 'type' => 'A', 'priority' => '', 'value' => '192.0.2.10']]);
+        // The next sequence number instead of the last one: the live service saves nothing.
+        $client->request('GET', 'https://www.quickdns.dk/editzonedone', ['query' => ['save' => 1, 'seq' => 2, 'zkey' => $match[1]]]);
+
+        $this->assertCount(4, $fake->recordsOf('flyvende-agurk-pingvin.dk'));
+    }
+
+    public function test_the_fake_rejects_what_quickdns_rejects()
+    {
+        $fake = new FakeQuickDns();
+        $fake->addZone('flyvende-agurk-pingvin.dk');
+        $client = new Client(['handler' => HandlerStack::create($fake), 'cookies' => true]);
+        $client->request('POST', 'https://www.quickdns.dk/login', ['form_params' => ['email' => 'test@example.dk', 'password' => 'secret']]);
+        $page = (string) $client->request('GET', 'https://www.quickdns.dk/editzone', ['query' => ['id' => 1000]])->getBody();
+        preg_match("/init\('([0-9a-f]+)'/", $page, $match);
+
+        // Straight at the endpoint, so the library's own validation cannot get in the way.
+        $answer = (string) $client->request('GET', 'https://www.quickdns.dk/submitzonechange', ['query' => [
+            'action' => 'edit', 'seq' => 1, 'zkey' => $match[1], 'row' => -1,
+            'record' => 'bad', 'ttl' => 3600, 'type' => 'TXT', 'priority' => '', 'value' => 'say "hi"',
+        ]])->getBody();
+
+        $this->assertStringContainsString('indeholder ugyldige tegn', mb_convert_encoding($answer, 'UTF-8', 'ISO-8859-1'));
+        $this->assertStringContainsString('<badrecord>', $answer);
     }
 }

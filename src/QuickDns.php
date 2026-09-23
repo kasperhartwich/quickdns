@@ -11,6 +11,8 @@ use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
+use QuickDns\Internal\ZoneEditSession;
+use QuickDns\Parsing\ZoneTable;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -31,6 +33,8 @@ class QuickDns
     private $loggedIn = false;
 
     private $loggingIn = false;
+
+    private $editing = false;
 
     /**
      * The class lazy() is constructing, or null.
@@ -182,39 +186,47 @@ class QuickDns
             throw new \BadFunctionCallException('Zone is not created yet.');
         }
 
-        // The zones list uses the same table id; only the record table has the class "records".
-        $table = $this->page('editzone', ['id' => $id])
-            ->filterXPath('//table[@id="zone_table" and contains(concat(" ", normalize-space(@class), " "), " records ")]');
-        if (! $table->count()) {
-            throw new UnrecognisedPage('No record table on the zone page for zone '.$id);
+        return ZoneTable::fromPage($this->page('editzone', ['id' => $id]), 'zone '.$id)->records();
+    }
+
+    /**
+     * Change a zone's records. Every change inside the closure is sent to QuickDNS as it is made,
+     * and the lot is saved when the closure returns. If the closure throws, or QuickDNS rejects a
+     * change, nothing is saved: QuickDNS keeps nothing from a session that holds a rejected
+     * record, not even the changes it accepted.
+     *
+     *     $zone->edit(function (RecordSet $records) {
+     *         $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+     *         $records->remove($records->sole(name: 'old', type: 'A'));
+     *     });
+     *
+     * @param  Zone|int|string  $zone  A zone or its id
+     * @param  callable(RecordSet): mixed  $changes
+     * @return mixed Whatever the closure returned
+     */
+    public function editZone($zone, callable $changes)
+    {
+        $id = $zone instanceof Zone ? $zone->id : $zone;
+        if (! $id) {
+            throw new \BadFunctionCallException('Zone is not created yet.');
+        }
+        if ($this->editing) {
+            throw new \LogicException('A zone is already being edited: QuickDNS keeps one pending table per session.');
         }
 
-        $records = [];
-        // Count every row, header and separators included: that is the row number QuickDNS uses.
-        foreach ($table->filterXPath('.//tr') as $row => $tr) {
-            $cells = $tr->getElementsByTagName('td');
-            if ($cells->length < 5) {
-                continue;
-            }
-            $text = fn (int $i) => trim($cells->item($i)->textContent);
-            $title = $cells->item(4)->getAttribute('title');
-            $template = null;
-            if ($cells->length > 5 && preg_match('/skabelonen "([^"]*)"/', $cells->item(5)->getAttribute('title'), $match)) {
-                $template = $match[1];
-            }
-            $records[] = new Record(
-                $text(0),
-                $text(2),
-                $text(1) === '' ? null : (int) $text(1),
-                $text(3) === '' ? null : (int) $text(3),
-                // The cell may shorten a long value; the title holds all of it.
-                $title !== '' ? trim($title) : $text(4),
-                $row,
-                $template,
-            );
-        }
+        $this->editing = true;
+        $session = ZoneEditSession::open($this, (string) $id, $this->page('editzone', ['id' => $id]));
+        $records = new RecordSet($session);
+        try {
+            $result = $changes($records);
+            $session->save();
 
-        return $records;
+            return $result;
+        } finally {
+            $records->close();
+            $session->close();
+            $this->editing = false;
+        }
     }
 
     /**
@@ -335,14 +347,7 @@ class QuickDns
      */
     public function command($function, $options = [], $method = self::METHOD_GET): Crawler
     {
-        // Go through request(), which subclasses may override. It strips an XML declaration with a
-        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
-        $body = $this->request($function, $options, $method);
-        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
-            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
-        }
-        $xml = new Crawler();
-        $xml->addXmlContent($body);
+        $xml = $this->xml($function, $options, $method);
 
         $status = $xml->filterXPath('//response/status');
         if (! $status->count()) {
@@ -352,6 +357,30 @@ class QuickDns
             $statustext = $xml->filterXPath('//response/statustext');
             throw new CommandFailed($statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()));
         }
+
+        return $xml;
+    }
+
+    /**
+     * Request an XML answer and parse it. Commands answer <status>OK</status> or ERROR, but
+     * submitzonechange answers a Danish status line instead, so the OK check lives in command().
+     *
+     * @param  string  $function
+     * @param  array  $options
+     * @param  string  $method
+     *
+     * @internal
+     */
+    public function xml($function, $options = [], $method = self::METHOD_GET): Crawler
+    {
+        // Go through request(), which subclasses may override. It strips an XML declaration with a
+        // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
+        $body = $this->request($function, $options, $method);
+        if (! str_starts_with(ltrim($body), '<?xml') && ! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
+        $xml = new Crawler();
+        $xml->addXmlContent($body);
 
         return $xml;
     }
