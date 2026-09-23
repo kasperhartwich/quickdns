@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # The tests run the whole supported range anyway, so only development
+    # dependencies are worth a pull request; the library's own constraints are
+    # widened by hand.
+    allow:
+      - dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
