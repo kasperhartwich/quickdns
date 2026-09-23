@@ -11,6 +11,7 @@ use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
+use QuickDns\Parsing\ZoneTable;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -182,39 +183,7 @@ class QuickDns
             throw new \BadFunctionCallException('Zone is not created yet.');
         }
 
-        // The zones list uses the same table id; only the record table has the class "records".
-        $table = $this->page('editzone', ['id' => $id])
-            ->filterXPath('//table[@id="zone_table" and contains(concat(" ", normalize-space(@class), " "), " records ")]');
-        if (! $table->count()) {
-            throw new UnrecognisedPage('No record table on the zone page for zone '.$id);
-        }
-
-        $records = [];
-        // Count every row, header and separators included: that is the row number QuickDNS uses.
-        foreach ($table->filterXPath('.//tr') as $row => $tr) {
-            $cells = $tr->getElementsByTagName('td');
-            if ($cells->length < 5) {
-                continue;
-            }
-            $text = fn (int $i) => trim($cells->item($i)->textContent);
-            $title = $cells->item(4)->getAttribute('title');
-            $template = null;
-            if ($cells->length > 5 && preg_match('/skabelonen "([^"]*)"/', $cells->item(5)->getAttribute('title'), $match)) {
-                $template = $match[1];
-            }
-            $records[] = new Record(
-                $text(0),
-                $text(2),
-                $text(1) === '' ? null : (int) $text(1),
-                $text(3) === '' ? null : (int) $text(3),
-                // The cell may shorten a long value; the title holds all of it.
-                $title !== '' ? trim($title) : $text(4),
-                $row,
-                $template,
-            );
-        }
-
-        return $records;
+        return ZoneTable::fromPage($this->page('editzone', ['id' => $id]), 'zone '.$id)->records();
     }
 
     /**
