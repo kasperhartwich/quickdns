@@ -3,6 +3,10 @@
          xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnWarning="true"
+         failOnNotice="true"
+         failOnDeprecation="true"
+         failOnRisky="true"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -12,6 +16,15 @@
             <directory suffix="Test.php">./tests/Live/</directory>
         </testsuite>
     </testsuites>
+
+    <!-- A warning, notice or deprecation fails the run, but only when our own code causes it: the
+         oldest supported dependencies are noisy on new PHP versions, and that is not ours to fix. -->
+    <source restrictNotices="true" restrictWarnings="true" ignoreIndirectDeprecations="true">
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+
     <php>
         <env name="QUICKDNS_EMAIL" value="" />
         <env name="QUICKDNS_PASSWORD" value="" />
