@@ -67,6 +67,51 @@ class Zone extends BaseModel
     }
 
     /**
+     * Change the zone's records in one edit session. See QuickDns::editZone().
+     *
+     * @param  callable(RecordSet): mixed  $changes
+     * @return mixed Whatever the closure returned
+     */
+    public function edit(callable $changes)
+    {
+        if (! $this->id) {
+            throw new \BadFunctionCallException('Zone is not created yet.');
+        }
+
+        return $this->quickdns->editZone($this, $changes);
+    }
+
+    /**
+     * Add one record to the zone, in an edit session of its own.
+     */
+    public function addRecord(string $name, RecordType|string $type, string $value, ?int $ttl = null, ?int $priority = null, bool $allowDuplicates = false): Record
+    {
+        return $this->edit(fn (RecordSet $records) => $records->add($name, $type, $value, $ttl, $priority, $allowDuplicates));
+    }
+
+    /**
+     * Change one record, in an edit session of its own. The record must come from getRecords().
+     */
+    public function replaceRecord(Record $record, Record $with): Record
+    {
+        return $this->edit(function (RecordSet $records) use ($record, $with) {
+            $found = $records->sole($record->name, $record->type, $record->value);
+
+            return $records->replace($found, $with);
+        });
+    }
+
+    /**
+     * Delete one record, in an edit session of its own. The record must come from getRecords().
+     */
+    public function deleteRecord(Record $record): void
+    {
+        $this->edit(function (RecordSet $records) use ($record) {
+            $records->remove($records->sole($record->name, $record->type, $record->value));
+        });
+    }
+
+    /**
      * Delete Zone
      *
      * @return bool

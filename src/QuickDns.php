@@ -11,6 +11,7 @@ use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
+use QuickDns\Internal\ZoneEditSession;
 use QuickDns\Parsing\ZoneTable;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -32,6 +33,8 @@ class QuickDns
     private $loggedIn = false;
 
     private $loggingIn = false;
+
+    private $editing = false;
 
     /**
      * The class lazy() is constructing, or null.
@@ -184,6 +187,46 @@ class QuickDns
         }
 
         return ZoneTable::fromPage($this->page('editzone', ['id' => $id]), 'zone '.$id)->records();
+    }
+
+    /**
+     * Change a zone's records. Every change inside the closure is sent to QuickDNS as it is made,
+     * and the lot is saved when the closure returns. If the closure throws, or QuickDNS rejects a
+     * change, nothing is saved: QuickDNS keeps nothing from a session that holds a rejected
+     * record, not even the changes it accepted.
+     *
+     *     $zone->edit(function (RecordSet $records) {
+     *         $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+     *         $records->remove($records->sole(name: 'old', type: 'A'));
+     *     });
+     *
+     * @param  Zone|int|string  $zone  A zone or its id
+     * @param  callable(RecordSet): mixed  $changes
+     * @return mixed Whatever the closure returned
+     */
+    public function editZone($zone, callable $changes)
+    {
+        $id = $zone instanceof Zone ? $zone->id : $zone;
+        if (! $id) {
+            throw new \BadFunctionCallException('Zone is not created yet.');
+        }
+        if ($this->editing) {
+            throw new \LogicException('A zone is already being edited: QuickDNS keeps one pending table per session.');
+        }
+
+        $this->editing = true;
+        $session = ZoneEditSession::open($this, (string) $id, $this->page('editzone', ['id' => $id]));
+        $records = new RecordSet($session);
+        try {
+            $result = $changes($records);
+            $session->save();
+
+            return $result;
+        } finally {
+            $records->close();
+            $session->close();
+            $this->editing = false;
+        }
     }
 
     /**

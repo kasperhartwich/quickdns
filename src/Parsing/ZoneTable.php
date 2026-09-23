@@ -17,9 +17,10 @@ use Symfony\Component\DomCrawler\Crawler;
 final class ZoneTable
 {
     /**
-     * @param  array<int, Record>  $records  Keyed by row number
+     * @param  array<int, ?Record>  $rows  Every row of the table, keyed by row number. A row that
+     *                                     holds no record, such as the header, is null.
      */
-    private function __construct(private array $records)
+    private function __construct(private array $rows)
     {
     }
 
@@ -36,9 +37,10 @@ final class ZoneTable
             throw new UnrecognisedPage('No record table on the zone page for '.$what);
         }
 
-        $records = [];
+        $rows = [];
         foreach ($table->filterXPath('.//tr') as $row => $tr) {
             $cells = $tr->getElementsByTagName('td');
+            $rows[$row] = null;
             if ($cells->length < 5) {
                 continue;
             }
@@ -48,7 +50,7 @@ final class ZoneTable
             if ($cells->length > 5 && preg_match('/skabelonen "([^"]*)"/', $cells->item(5)->getAttribute('title'), $match)) {
                 $template = $match[1];
             }
-            $records[$row] = new Record(
+            $rows[$row] = new Record(
                 $text(0),
                 $text(2),
                 $text(1) === '' ? null : (int) $text(1),
@@ -60,7 +62,7 @@ final class ZoneTable
             );
         }
 
-        return new self($records);
+        return new self($rows);
     }
 
     /**
@@ -70,6 +72,17 @@ final class ZoneTable
      */
     public function records(): array
     {
-        return array_values($this->records);
+        return array_values(array_filter($this->rows));
+    }
+
+    /**
+     * Every row, keyed by the row number QuickDNS addresses records by. Rows without a record,
+     * such as the header, are null.
+     *
+     * @return array<int, ?Record>
+     */
+    public function byRow(): array
+    {
+        return $this->rows;
     }
 }
