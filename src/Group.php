@@ -20,10 +20,8 @@ class Group extends BaseModel
 
     /**
      * Group constructor.
-     *
-     * @param  null  $name
      */
-    public function __construct(QuickDns $quickdns, $name = null)
+    public function __construct(QuickDns $quickdns, ?string $name = null)
     {
         $this->quickdns = $quickdns;
         $this->name = $name;
@@ -32,10 +30,8 @@ class Group extends BaseModel
     /**
      * Create Group. QuickDNS does not answer with the new group's id, so fetch the group with
      * QuickDns::getGroup() before deleting it or adding zones.
-     *
-     * @return $this
      */
-    public function create()
+    public function create(): static
     {
         $this->quickdns->command('addgroup', [
             'group' => $this->name,
@@ -46,10 +42,8 @@ class Group extends BaseModel
 
     /**
      * Delete Group
-     *
-     * @return bool
      */
-    public function delete()
+    public function delete(): bool
     {
         if (! $this->id) {
             throw new \BadFunctionCallException('Group is not created yet.');
@@ -63,10 +57,8 @@ class Group extends BaseModel
 
     /**
      * Add a zone to the group, keeping the zone's other groups.
-     *
-     * @return $this
      */
-    public function addZone(Zone $zone)
+    public function addZone(Zone $zone): static
     {
         $this->quickdns->setGroups($zone, array_merge($this->groupsOf($zone), [$this]));
 
@@ -75,10 +67,8 @@ class Group extends BaseModel
 
     /**
      * Take a zone off the group, leaving the zone's other groups alone.
-     *
-     * @return $this
      */
-    public function removeZone(Zone $zone)
+    public function removeZone(Zone $zone): static
     {
         $this->quickdns->setGroups($zone, array_values(array_filter(
             $this->groupsOf($zone),

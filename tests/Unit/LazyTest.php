@@ -150,7 +150,7 @@ final class LazyTest extends TestCase
         {
             public int $logins = 0;
 
-            public function login()
+            public function login(): bool
             {
                 $this->logins++;
 
@@ -178,7 +178,7 @@ final class LazyTest extends TestCase
         $stack->push(Middleware::history($this->history));
         $class = get_class(new class('a', 'b', new Client(['handler' => HandlerStack::create(new MockHandler([$this->response('login-ok')]))])) extends QuickDns
         {
-            public function login()
+            public function login(): bool
             {
                 return str_contains($this->request('/login', ['email' => 'a', 'password' => 'b'], self::METHOD_POST), 'Log ud');
             }
