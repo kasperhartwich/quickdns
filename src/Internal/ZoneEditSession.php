@@ -36,6 +36,8 @@ final class ZoneEditSession
 
     private ?int $lastChangedRow = null;
 
+    private ?RecordRejected $rejected = null;
+
     private function __construct(
         private readonly QuickDns $quickDns,
         private readonly string $zoneId,
@@ -100,7 +102,9 @@ final class ZoneEditSession
 
         if ($response->rejected()) {
             $records = array_values(array_filter(array_map(fn (int $row) => $this->rows[$row] ?? null, $response->badRows)));
-            throw new RecordRejected(
+            // QuickDNS keeps the rejected row in the pending table and saves nothing while it is
+            // there, so the session is spent even if the caller catches this.
+            throw $this->rejected = new RecordRejected(
                 $response->errors[0] ?? $response->status,
                 $response->status,
                 $response->errors,
@@ -133,6 +137,11 @@ final class ZoneEditSession
      */
     public function save(): void
     {
+        if ($this->rejected !== null) {
+            // Saving here would answer with an ordinary page and store nothing at all, so say so
+            // rather than report a success that did not happen.
+            throw $this->rejected;
+        }
         if (! $this->started || $this->finished) {
             $this->finished = true;
 
