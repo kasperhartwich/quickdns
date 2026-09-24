@@ -1,0 +1,8 @@
+parameters:
+    # Level 2 is what the 2.x code passes cleanly. The errors waiting at level 3 are the type
+    # lies 3.0 is about: Zone::$id is a string behind an int docblock, Template::$zones an int
+    # behind an array one, and the models' names are nullable in practice. Raise the level in the
+    # pull request that fixes each, and never add a baseline: the point is to see them.
+    level: 2
+    paths:
+        - src
