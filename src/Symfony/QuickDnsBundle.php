@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns\Symfony;
 
 use QuickDns\QuickDns;

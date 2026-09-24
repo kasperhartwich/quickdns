@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns\Testing;
 
 use GuzzleHttp\Client;

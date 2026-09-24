@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns;
 
 /**
@@ -10,7 +12,7 @@ namespace QuickDns;
  */
 class Group extends BaseModel
 {
-    protected $quickdns;
+    protected QuickDns $quickdns;
 
     public $name;
 

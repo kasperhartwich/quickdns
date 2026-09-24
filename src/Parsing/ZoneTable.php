@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns\Parsing;
 
 use QuickDns\Exceptions\UnrecognisedPage;

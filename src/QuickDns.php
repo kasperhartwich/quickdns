@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns;
 
 use GuzzleHttp\Client;
@@ -23,26 +25,26 @@ use Symfony\Component\DomCrawler\Crawler;
  */
 class QuickDns
 {
-    private $email;
+    private string $email;
 
-    private $password;
+    private string $password;
 
-    private $base_uri = 'https://www.quickdns.dk/';
+    private string $base_uri = 'https://www.quickdns.dk/';
 
-    private $client;
+    private ClientInterface $client;
 
-    private $cookieJar;
+    private CookieJar $cookieJar;
 
-    private $loggedIn = false;
+    private bool $loggedIn = false;
 
-    private $loggingIn = false;
+    private bool $loggingIn = false;
 
-    private $editing = false;
+    private bool $editing = false;
 
     /**
      * The class lazy() is constructing, or null.
      */
-    private static $constructLazily = null;
+    private static ?string $constructLazily = null;
 
     const METHOD_POST = 'POST';
 
@@ -90,7 +92,7 @@ class QuickDns
         }
     }
 
-    private function configure($email, $password, ?ClientInterface $client): void
+    private function configure(string $email, string $password, ?ClientInterface $client): void
     {
         $this->email = $email;
         $this->password = $password;
@@ -524,10 +526,10 @@ class QuickDns
      * updatetemplates means every template is removed, so this must not go through
      * http_build_query.
      *
-     * @param  array  $options
-     * @return string|array
+     * @param  array<string, string|int|array<string|int>>  $options
+     * @return string|array<string, string|int>
      */
-    private function query(array $options)
+    private function query(array $options): string|array
     {
         if (! array_filter($options, 'is_array')) {
             return $options;
@@ -543,7 +545,7 @@ class QuickDns
         return implode('&', $pairs);
     }
 
-    private function send($function, $options = [], $method = self::METHOD_GET): string
+    private function send(string $function, array $options = [], string $method = self::METHOD_GET): string
     {
         if (! $this->loggedIn && ! $this->loggingIn && ltrim($function, '/') !== 'login') {
             $this->logInOrFail();
