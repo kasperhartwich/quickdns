@@ -107,10 +107,6 @@ final class FakeQuickDns
             'records' => [],
             'updated' => $this->now(),
         ];
-        foreach (['ns1', 'ns2', 'ns3', 'ns4'] as $ns) {
-            $this->zones[$id]['records'][] = ['name' => '@', 'ttl' => null, 'type' => 'NS', 'priority' => null, 'value' => $ns.'.quickdns.dk.', 'template' => 'QuickDNS global'];
-        }
-
         return $id;
     }
 
@@ -220,7 +216,7 @@ final class FakeQuickDns
      */
     public function recordsOf(string $domain): array
     {
-        return $this->zones[$this->zoneId($domain)]['records'];
+        return $this->recordsOfZone($this->zoneId($domain));
     }
 
     /**
@@ -245,9 +241,31 @@ final class FakeQuickDns
      */
     private function pendingRows(int $id, string $what = 'zone'): array
     {
-        $records = $what === 'template' ? $this->templates[$id]['records'] : $this->zones[$id]['records'];
+        $records = $what === 'template' ? $this->templates[$id]['records'] : $this->recordsOfZone($id);
 
         return array_merge([null], array_values($records));
+    }
+
+    /**
+     * What the zone page shows: the records of every template it uses, marked as theirs and
+     * locked, and then the zone's own.
+     *
+     * @return array<int, array>
+     */
+    private function recordsOfZone(int $id): array
+    {
+        // Like QuickDNS, every zone starts with the four NS records of "QuickDNS global".
+        $records = [];
+        foreach (['ns1', 'ns2', 'ns3', 'ns4'] as $ns) {
+            $records[] = ['name' => '@', 'ttl' => null, 'type' => 'NS', 'priority' => null, 'value' => $ns.'.quickdns.dk.', 'template' => 'QuickDNS global'];
+        }
+        foreach ($this->zones[$id]['templates'] as $template) {
+            foreach ($this->templates[$template]['records'] as $record) {
+                $records[] = ['template' => $this->templates[$template]['name']] + $record;
+            }
+        }
+
+        return array_merge($records, array_values($this->zones[$id]['records']));
     }
 
     /**
@@ -344,7 +362,8 @@ final class FakeQuickDns
                     $this->templates[$session['zone']]['records'] = $records;
                     $this->templates[$session['zone']]['updated'] = $this->now();
                 } else {
-                    $this->zones[$session['zone']]['records'] = $records;
+                    // A template's rows belong to the template, not to the zone.
+                    $this->zones[$session['zone']]['records'] = array_values(array_filter($records, fn ($record) => $record['template'] === null));
                     $this->zones[$session['zone']]['updated'] = $this->now();
                 }
             }
@@ -550,7 +569,7 @@ final class FakeQuickDns
 
         return $this->page('Mine zoner', '<p>Zone: '.$this->e($this->zones[$id]['domain']).'</p>'
             .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', false); };</script>'
-            .$this->recordsTable($this->zones[$id]['records']));
+            .$this->recordsTable($this->recordsOfZone($id)));
     }
 
     /**

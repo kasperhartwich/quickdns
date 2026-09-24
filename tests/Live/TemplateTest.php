@@ -120,17 +120,20 @@ final class TemplateTest extends TestCase
     {
         $template = (new Template($this->quickDns, 'quickdns-api-rename-me'))->create();
 
+        $group = $this->quickDns->getGroup($this->testGroup);
+
         try {
             $template->rename('quickdns-api-renamed');
 
             $this->assertSame('quickdns-api-renamed', $template->name);
             $this->assertSame($template->id, $this->quickDns->getTemplate('quickdns-api-renamed')->id);
 
-            $group = $this->quickDns->getGroup($this->testGroup);
             $group->rename('quickdns-api-renamed-group');
             $this->assertSame($group->id, $this->quickDns->getGroup('quickdns-api-renamed-group')->id);
-            $group->rename($this->testGroup);
         } finally {
+            // The account is shared by every test in the suite, so the group goes back whatever
+            // happens above.
+            $group->rename($this->testGroup);
             $template->delete();
         }
     }

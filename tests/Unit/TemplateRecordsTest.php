@@ -84,11 +84,14 @@ final class TemplateRecordsTest extends TestCase
             ['@ MX mx2.example.dk.', 'www A 192.0.2.10'],
             array_map(fn (Record $r) => "{$r->name} {$r->type} {$r->value}", $template->getRecords()),
         );
-        // The template's records are its own: a zone using it keeps its four NS rows plus these.
-        $this->assertSame(
-            ['@ MX mx2.example.dk.', 'www A 192.0.2.10'],
-            array_map(fn (Record $r) => "{$r->name} {$r->type} {$r->value}", $fake->quickDns()->getTemplateRecords($template->id)),
-        );
+        // A zone using the template gets them, as the template's and locked.
+        $fake->addZone('example.dk', ['standard']);
+        $onTheZone = $quickDns->getZone('example.dk')->getRecords();
+        $fromTemplate = array_values(array_filter($onTheZone, fn (Record $r) => $r->template === 'standard'));
+
+        $this->assertCount(2, $fromTemplate);
+        $this->assertTrue($fromTemplate[0]->isLocked());
+        $this->assertCount(6, $onTheZone, 'Four NS records of its own, plus the template\'s two.');
     }
 
     public function test_rename_a_template()
