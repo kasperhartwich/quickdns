@@ -415,7 +415,7 @@ class QuickDns
                 $this->expectCells($tr, 6, 'templates');
                 $name = $this->cell($tr, 1, 'templates');
                 $template = new Template($this, $name);
-                $template->id = $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\w+\?id=(\d+)/m', 'templates');
+                $template->id = $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\?id=(\d+)(?:&|$)/', 'templates');
                 $template->name = $name;
                 $template->zones = (int) $this->cell($tr, 2, 'templates');
                 $template->groups = $this->names($this->cell($tr, 3, 'templates'));
@@ -451,7 +451,7 @@ class QuickDns
                 $this->expectCells($tr, 4, 'groups');
                 $name = $this->cell($tr, 1, 'groups');
                 $group = new Group($this, $name);
-                $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s\=\s(\d+)\;/m', 'groups');
+                $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
                 $group->name = $name;
                 $group->members = $this->names($this->cell($tr, 2, 'groups'));
                 $group->updated = $this->cell($tr, 3, 'groups');

@@ -59,6 +59,23 @@ final class BrokenPageTest extends TestCase
         $this->quickDns([$page])->getTemplates();
     }
 
+    public function test_a_template_link_whose_id_runs_into_something_else()
+    {
+        // The id has to be the whole value, or "id=17284broken" would read as template 17284.
+        $page = str_replace('/edittemplate?id=17284', '/edittemplate?id=17284broken', $this->fixture('templates'));
+
+        $this->expectException(UnrecognisedPage::class);
+        $this->expectExceptionMessage('No id in');
+        $this->quickDns([$page])->getTemplates();
+    }
+
+    public function test_a_template_link_with_more_parameters_still_reads()
+    {
+        $page = str_replace('/edittemplate?id=17284', '/edittemplate?id=17284&back=1', $this->fixture('templates'));
+
+        $this->assertSame(17284, $this->quickDns([$page])->getTemplates()[0]->id);
+    }
+
     public function test_a_group_row_without_its_handler()
     {
         $page = str_replace('onclick="groupid = 738; edit_members(parentNode.parentNode.rowIndex);"', '', $this->fixture('groups'));
