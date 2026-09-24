@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns;
 
 use QuickDns\Exceptions\InvalidRecord;

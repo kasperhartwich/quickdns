@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns\Laravel;
 
 use Illuminate\Contracts\Foundation\Application;

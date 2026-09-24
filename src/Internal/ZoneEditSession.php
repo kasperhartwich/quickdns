@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace QuickDns\Internal;
 
 use QuickDns\Exceptions\RecordRejected;
