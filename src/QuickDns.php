@@ -53,13 +53,11 @@ class QuickDns
     /**
      * QuickDns constructor.
      *
-     * @param  string  $email
-     * @param  string  $password
      * @param  ClientInterface|null  $client  Guzzle client to send requests with, e.g. one with your own
      *                                        middleware or a MockHandler. The session cookies are kept
      *                                        by QuickDns, so the client needs no cookie jar.
      */
-    public function __construct($email, $password, ?ClientInterface $client = null)
+    public function __construct(string $email, string $password, ?ClientInterface $client = null)
     {
         $this->configure($email, $password, $client);
         if (self::$constructLazily === static::class) {
@@ -74,11 +72,8 @@ class QuickDns
      * A QuickDns that logs in on its first request instead of right away, once per instance.
      * Useful where the object is built long before it is used, e.g. in a service container.
      * Wrong credentials throw LoginFailed from that first request.
-     *
-     * @param  string  $email
-     * @param  string  $password
      */
-    public static function lazy($email, $password, ?ClientInterface $client = null): static
+    public static function lazy(string $email, string $password, ?ClientInterface $client = null): static
     {
         // Go through the constructor, so a subclass' own constructor still runs.
         // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy, and
@@ -117,9 +112,8 @@ class QuickDns
     /**
      * Login to QuickDns
      *
-     * @return bool
      */
-    public function login()
+    public function login(): bool
     {
         $response = $this->request('login', [
             'email' => $this->email,
@@ -138,9 +132,9 @@ class QuickDns
     /**
      * Get Zones
      *
-     * @return array
+     * @return Zone[]
      */
-    public function getZones()
+    public function getZones(): array
     {
         $zones = [];
         foreach ($this->listRows('zones', 'zone_table') as $node) {
@@ -171,9 +165,8 @@ class QuickDns
     /**
      * Get Zone by Domain
      *
-     * @return Zone
      */
-    public function getZone($domain)
+    public function getZone(string $domain): Zone
     {
         foreach ($this->getZones() as $zone) {
             if ($zone->domain == $domain) {
@@ -186,12 +179,11 @@ class QuickDns
     /**
      * Get the records of a zone, in the order QuickDNS lists them.
      *
-     * @param  Zone|int|string  $zone  A zone or its id
      * @return Record[]
      *
      * @throws UnrecognisedPage when the page has no record table
      */
-    public function getRecords($zone): array
+    public function getRecords(Zone|int|string $zone): array
     {
         $id = $this->zoneId($zone);
 
@@ -209,11 +201,10 @@ class QuickDns
      *         $records->remove($records->sole(name: 'old', type: 'A'));
      *     });
      *
-     * @param  Zone|int|string  $zone  A zone or its id
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function editZone($zone, callable $changes)
+    public function editZone(Zone|int|string $zone, callable $changes): mixed
     {
         $id = $this->zoneId($zone);
         if ($this->editing) {
@@ -343,9 +334,9 @@ class QuickDns
     /**
      * Get Templates
      *
-     * @return array
+     * @return Template[]
      */
-    public function getTemplates()
+    public function getTemplates(): array
     {
         return $this->listRows('templates', 'zone_table')
             ->each(function (Crawler $tr) {
@@ -364,9 +355,8 @@ class QuickDns
     /**
      * Get Template by Name
      *
-     * @return Template
      */
-    public function getTemplate($name)
+    public function getTemplate(string $name): Template
     {
         foreach ($this->getTemplates() as $template) {
             if ($template->name == $name) {
@@ -379,9 +369,9 @@ class QuickDns
     /**
      * Get Groups
      *
-     * @return array
+     * @return Group[] Keyed from 1, as 2.2 returned them
      */
-    public function getGroups()
+    public function getGroups(): array
     {
         $groups = $this->listRows('groups', 'group_table')
             ->each(function (Crawler $tr) {
@@ -402,9 +392,8 @@ class QuickDns
     /**
      * Get Group by Name
      *
-     * @return Group
      */
-    public function getGroup($name)
+    public function getGroup(string $name): Group
     {
         foreach ($this->getGroups() as $group) {
             if ($group->name == $name) {
@@ -449,14 +438,10 @@ class QuickDns
      * Run a QuickDNS command (addzone, delzone, updatetemplates, ...) and return its XML answer,
      * <response><status>OK</status><statustext>...</statustext>...</response>.
      *
-     * @param  string  $function
-     * @param  array  $options
-     * @param  string  $method
-     *
      * @throws CommandFailed when QuickDNS answers ERROR, with QuickDNS' statustext as message
      * @throws UnrecognisedPage when the answer is not a command response
      */
-    public function command($function, $options = [], $method = self::METHOD_GET): Crawler
+    public function command(string $function, array $options = [], string $method = self::METHOD_GET): Crawler
     {
         $xml = $this->xml($function, $options, $method);
 
@@ -476,13 +461,9 @@ class QuickDns
      * Request an XML answer and parse it. Commands answer <status>OK</status> or ERROR, but
      * submitzonechange answers a Danish status line instead, so the OK check lives in command().
      *
-     * @param  string  $function
-     * @param  array  $options
-     * @param  string  $method
-     *
      * @internal
      */
-    public function xml($function, $options = [], $method = self::METHOD_GET): Crawler
+    public function xml(string $function, array $options = [], string $method = self::METHOD_GET): Crawler
     {
         // Go through request(), which subclasses may override. It strips an XML declaration with a
         // lowercase iso-8859-1 encoding; without one libxml reads UTF-8, so convert first.
@@ -497,15 +478,13 @@ class QuickDns
     }
 
     /**
-     * Request the API
+     * Request the API.
      *
-     * @param  string  $function
-     * @param  array  $options
-     * @param  string  $method
+     * @internal Use command() or page(), or FakeQuickDns in tests.
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function request($function, $options = [], $method = self::METHOD_GET): string
+    public function request(string $function, array $options = [], string $method = self::METHOD_GET): string
     {
         //Apparently QuickDns declare the html as xml.
         return str_replace('<?xml version="1.0" encoding="iso-8859-1"?>', '', $this->send($function, $options, $method));

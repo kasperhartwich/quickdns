@@ -29,7 +29,7 @@ class Zone extends BaseModel
      *
      * @var int[]|null
      */
-    public $templateIds = null;
+    public ?array $templateIds = null;
 
     /**
      * The ids of the groups the zone is in, as the zones page carries them. Null when the zone did
@@ -37,14 +37,12 @@ class Zone extends BaseModel
      *
      * @var int[]|null
      */
-    public $groupIds = null;
+    public ?array $groupIds = null;
 
     /**
      * Zone constructor.
-     *
-     * @param  null  $domain
      */
-    public function __construct(QuickDns $quickdns, $domain = null)
+    public function __construct(QuickDns $quickdns, ?string $domain = null)
     {
         $this->quickdns = $quickdns;
         $this->domain = $domain;
@@ -52,11 +50,8 @@ class Zone extends BaseModel
 
     /**
      * Create Zone. Sets the zone's id, so it can be deleted or attached right away.
-     *
-     * @param  bool  $get_data
-     * @return $this
      */
-    public function create($get_data = false)
+    public function create(bool $get_data = false): static
     {
         $response = $this->quickdns->command('addzone', [
             'zone' => $this->domain,
@@ -92,7 +87,7 @@ class Zone extends BaseModel
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function edit(callable $changes)
+    public function edit(callable $changes): mixed
     {
         if (! $this->id) {
             throw new \BadFunctionCallException('Zone is not created yet.');
@@ -143,10 +138,8 @@ class Zone extends BaseModel
 
     /**
      * Delete Zone
-     *
-     * @return bool
      */
-    public function delete()
+    public function delete(): bool
     {
         if (! $this->id) {
             throw new \BadFunctionCallException('Zone is not created yet.');

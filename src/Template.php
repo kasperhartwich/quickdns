@@ -23,10 +23,8 @@ class Template extends BaseModel
 
     /**
      * Template constructor.
-     *
-     * @param  null  $name
      */
-    public function __construct(QuickDns $quickdns, $name = null)
+    public function __construct(QuickDns $quickdns, ?string $name = null)
     {
         $this->quickdns = $quickdns;
         $this->name = $name;
@@ -34,10 +32,8 @@ class Template extends BaseModel
 
     /**
      * Create Template. Sets the template's id, so it can be deleted or used right away.
-     *
-     * @return $this
      */
-    public function create()
+    public function create(): static
     {
         $response = $this->quickdns->command('addtemplate', [
             'zone' => $this->name,
@@ -54,10 +50,8 @@ class Template extends BaseModel
 
     /**
      * Delete Template
-     *
-     * @return bool
      */
-    public function delete()
+    public function delete(): bool
     {
         if (! $this->id) {
             throw new \BadFunctionCallException('Template is not created yet.');
@@ -71,10 +65,8 @@ class Template extends BaseModel
 
     /**
      * Add a zone to the template, keeping the zone's other templates.
-     *
-     * @return $this
      */
-    public function addZone(Zone $zone)
+    public function addZone(Zone $zone): static
     {
         $this->quickdns->setTemplates($zone, array_merge($this->templatesOf($zone), [$this]));
 
@@ -83,10 +75,8 @@ class Template extends BaseModel
 
     /**
      * Take a zone off the template, leaving the zone's other templates alone.
-     *
-     * @return $this
      */
-    public function removeZone(Zone $zone)
+    public function removeZone(Zone $zone): static
     {
         $this->quickdns->setTemplates($zone, array_values(array_filter(
             $this->templatesOf($zone),
