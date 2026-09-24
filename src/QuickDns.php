@@ -17,6 +17,9 @@ use Symfony\Component\DomCrawler\Crawler;
 
 /**
  * Class QuickDns
+ *
+ * @phpstan-consistent-constructor lazy() builds the class it is called on, so a subclass that
+ *                                 changes the constructor signature breaks it.
  */
 class QuickDns
 {
@@ -139,6 +142,9 @@ class QuickDns
     {
         $zones = [];
         foreach ($this->listRows('zones', 'zone_table') as $node) {
+            if (! $node instanceof \DOMElement) {
+                continue;
+            }
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
                 $zone_data[] = trim($td->nodeValue);

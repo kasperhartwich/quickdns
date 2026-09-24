@@ -39,8 +39,11 @@ final class ZoneTable
 
         $rows = [];
         foreach ($table->filterXPath('.//tr') as $row => $tr) {
-            $cells = $tr->getElementsByTagName('td');
             $rows[$row] = null;
+            if (! $tr instanceof \DOMElement) {
+                continue;
+            }
+            $cells = $tr->getElementsByTagName('td');
             if ($cells->length < 5) {
                 continue;
             }
