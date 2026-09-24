@@ -151,6 +151,10 @@ class QuickDns
             }
             //Generate zone
             $zone = new Zone($this, $zone_data[2]);
+            // The row carries the ids as well as the names: templates(rowIndex, new Array('17284'))
+            // and groups(rowIndex, usearray, editarray).
+            $zone->templateIds = $this->idsInCall($node, 'templates', 1);
+            $zone->groupIds = $this->idsInCall($node, 'groups', 2);
             $zone->id = $zone_data[0];
             $zone->domain = $zone_data[2];
             $zone->templates = $zone_data[3] == 'Ingen' ? [] : explode(', ', $zone_data[3]);
@@ -187,10 +191,7 @@ class QuickDns
      */
     public function getRecords($zone): array
     {
-        $id = $zone instanceof Zone ? $zone->id : $zone;
-        if (! $id) {
-            throw new \BadFunctionCallException('Zone is not created yet.');
-        }
+        $id = $this->zoneId($zone);
 
         return ZoneTable::fromPage($this->page('editzone', ['id' => $id]), 'zone '.$id)->records();
     }
@@ -212,10 +213,7 @@ class QuickDns
      */
     public function editZone($zone, callable $changes)
     {
-        $id = $zone instanceof Zone ? $zone->id : $zone;
-        if (! $id) {
-            throw new \BadFunctionCallException('Zone is not created yet.');
-        }
+        $id = $this->zoneId($zone);
         if ($this->editing) {
             throw new \LogicException('A zone is already being edited: QuickDNS keeps one pending table per session.');
         }
@@ -233,6 +231,84 @@ class QuickDns
             $session->close();
             $this->editing = false;
         }
+    }
+
+    /**
+     * The ids in one of the zone row's onclick calls, e.g. groups(rowIndex, new Array(), new
+     * Array('738')) where the second array holds the groups the zone is a member of.
+     *
+     * @return int[]
+     */
+    private function idsInCall(\DOMElement $row, string $function, int $argument): array
+    {
+        foreach ($row->getElementsByTagName('a') as $link) {
+            if (! preg_match('/'.$function.'\((?<arguments>.*)\)/', $link->getAttribute('onclick'), $match)) {
+                continue;
+            }
+            preg_match_all("/new Array\(([^)]*)\)/", $match['arguments'], $arrays);
+            $ids = $arrays[1][$argument - 1] ?? '';
+            preg_match_all("/'(\d+)'/", $ids, $found);
+
+            return array_map('intval', $found[1]);
+        }
+
+        return [];
+    }
+
+    /**
+     * Set a zone's templates to exactly these, in one request. An empty list removes them all.
+     *
+     * QuickDNS replaces the whole list every time, so this is the honest shape of the endpoint:
+     * Template::addZone() and removeZone() are built on it.
+     *
+     * @param  array<Template|string|int>  $templates  Templates, their names, or their ids
+     *
+     * @throws NotFound when the account has no template of that name
+     */
+    public function setTemplates(Zone|int|string $zone, array $templates): void
+    {
+        $this->command('updatetemplates', [
+            'zone' => $this->zoneId($zone),
+            'template' => $this->idsOf($templates, fn (string $name) => $this->getTemplate($name)->id),
+        ]);
+    }
+
+    /**
+     * Set the groups a zone is in to exactly these, in one request. An empty list removes them all.
+     *
+     * @param  array<Group|string|int>  $groups  Groups, their names, or their ids
+     *
+     * @throws NotFound when the account has no group of that name
+     */
+    public function setGroups(Zone|int|string $zone, array $groups): void
+    {
+        $this->command('updategroups', [
+            'zone' => $this->zoneId($zone),
+            'group' => $this->idsOf($groups, fn (string $name) => $this->getGroup($name)->id),
+        ]);
+    }
+
+    /**
+     * @param  array<BaseModel|string|int>  $items
+     * @param  callable(string): (int|string|null)  $lookup
+     * @return array<int|string>
+     */
+    private function idsOf(array $items, callable $lookup): array
+    {
+        return array_values(array_map(function ($item) use ($lookup) {
+            if ($item instanceof BaseModel) {
+                return $item->id;
+            }
+
+            return is_numeric($item) ? $item : $lookup((string) $item);
+        }, $items));
+    }
+
+    private function zoneId(Zone|int|string $zone): int|string
+    {
+        $id = $zone instanceof Zone ? $zone->id : $zone;
+
+        return $id ?: throw new \BadFunctionCallException('Zone is not created yet.');
     }
 
     /**
@@ -413,6 +489,33 @@ class QuickDns
      * @param  array  $options
      * @param  string  $method
      */
+    /**
+     * Build a query string the way QuickDNS' own pages do.
+     *
+     * A list is sent as the same parameter repeated: template=1&template=2. PHP's own
+     * template[0]=1 is answered with "OK Opdateret" and then quietly ignored, which on
+     * updatetemplates means every template is removed, so this must not go through
+     * http_build_query.
+     *
+     * @param  array  $options
+     * @return string|array
+     */
+    private function query(array $options)
+    {
+        if (! array_filter($options, 'is_array')) {
+            return $options;
+        }
+
+        $pairs = [];
+        foreach ($options as $name => $value) {
+            foreach ((array) $value as $one) {
+                $pairs[] = rawurlencode((string) $name).'='.rawurlencode((string) $one);
+            }
+        }
+
+        return implode('&', $pairs);
+    }
+
     private function send($function, $options = [], $method = self::METHOD_GET): string
     {
         if (! $this->loggedIn && ! $this->loggingIn && ltrim($function, '/') !== 'login') {
@@ -423,7 +526,7 @@ class QuickDns
         } elseif ($method == self::METHOD_POST) {
             $options = ['form_params' => $options];
         } else {
-            $options = ['query' => $options];
+            $options = ['query' => $this->query($options)];
         }
         $options['cookies'] = $this->cookieJar;
         $uri = UriResolver::resolve(new Uri($this->base_uri), new Uri($function));

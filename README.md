@@ -137,11 +137,20 @@ $template = $quickDns->getTemplate('my-template');
 $group = $quickDns->getGroup('my-group');
 
 $zone = $quickDns->getZone('example.dk');
-$template->addZone($zone);
+$template->addZone($zone);      // keeps the zone's other templates
 $group->addZone($zone);
 
-$template->removeZone($zone);
+$template->removeZone($zone);   // takes off only this one
 $group->removeZone($zone);
+```
+
+A zone can use several templates, and `$zone->templates` lists their names. To set the whole list
+at once, by name, id or object:
+
+```php
+$quickDns->setTemplates($zone, ['my-template', 'another']);
+$quickDns->setTemplates($zone, []);              // removes them all
+$quickDns->setGroups($zone, ['my-group']);
 ```
 
 `Template` and `Group` also have `create()` and `delete()`, just like `Zone`. QuickDNS does not

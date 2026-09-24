@@ -433,8 +433,8 @@ final class FakeQuickDns
             $rows .= '<tr class="listrow2" zoneid="'.$id.'">'
                 .'<td class="listrow2">&nbsp;</td>'
                 .'<td class="listrow2"><a href="/editzone?id='.$id.'">'.$this->e($zone['domain']).'</a></td>'
-                .'<td class="listrow2"><a href="javascript:void(0);">'.$this->names($zone['templates'], $this->templates).'</a></td>'
-                .'<td class="listrow2"><a href="javascript:void(0);">'.$this->names($zone['groups'], $this->groups).'</a></td>'
+                .'<td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = '.$id.'; templates(parentNode.parentNode.rowIndex, '.$this->idArray($zone['templates']).');">'.$this->names($zone['templates'], $this->templates).'</a></td>'
+                .'<td class="listrow2"><a href="javascript:void(0);" onclick="zoneid = '.$id.'; groups(parentNode.parentNode.rowIndex, new Array(), '.$this->idArray($zone['groups']).');">'.$this->names($zone['groups'], $this->groups).'</a></td>'
                 .'<td class="listrow2">'.$zone['updated'].'</td>'
                 .'<td class="listrow2"><a href="javascript:void(0);">Slet</a></td>'
                 ."</tr>\n";
@@ -655,6 +655,16 @@ final class FakeQuickDns
     private function sessionOf(RequestInterface $request): ?string
     {
         return preg_match('/PHPSESSID=([0-9a-f]+)/', $request->getHeaderLine('Cookie'), $match) ? $match[1] : null;
+    }
+
+    /**
+     * The ids as the zone row's onclick carries them: new Array('17284', '17285').
+     *
+     * @param  int[]  $ids
+     */
+    private function idArray(array $ids): string
+    {
+        return 'new Array('.implode(', ', array_map(fn ($id) => "'".$id."'", $ids)).')';
     }
 
     private function names(array $ids, array $items): string

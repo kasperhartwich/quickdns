@@ -54,18 +54,20 @@ final class GroupTest extends TestCase
         $group->delete();
     }
 
-    public function test_add_and_remove_zone()
+    public function test_add_and_remove_zone_keeps_the_zones_other_groups()
     {
         $quickDns = $this->quickDns(['updategroups', 'updategroups']);
         $group = new Group($quickDns, 'sjaskende-rabarber');
         $group->id = 744;
         $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
         $zone->id = 17296;
+        $zone->groupIds = [700];
 
         $group->addZone($zone);
-        $this->assertSame('updategroups?zone=17296&group=744', $this->lastRequestUri());
+        $this->assertSame('updategroups?zone=17296&group=700&group=744', urldecode($this->lastRequestUri()));
 
+        $zone->groupIds = [700, 744];
         $group->removeZone($zone);
-        $this->assertSame('updategroups?zone=17296', $this->lastRequestUri());
+        $this->assertSame('updategroups?zone=17296&group=700', urldecode($this->lastRequestUri()));
     }
 }

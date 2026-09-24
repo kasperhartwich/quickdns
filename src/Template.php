@@ -68,33 +68,44 @@ class Template extends BaseModel
     }
 
     /**
-     * Add Zone to template
-     * TODO: Support multiple templates
+     * Add a zone to the template, keeping the zone's other templates.
      *
      * @return $this
      */
     public function addZone(Zone $zone)
     {
-        $this->quickdns->command('updatetemplates', [
-            'zone' => $zone->id,
-            'template' => $this->id,
-        ]);
+        $this->quickdns->setTemplates($zone, array_merge($this->templatesOf($zone), [$this]));
 
         return $this;
     }
 
     /**
-     * Add Zone to template
-     * TODO: Support multiple templates
+     * Take a zone off the template, leaving the zone's other templates alone.
      *
      * @return $this
      */
     public function removeZone(Zone $zone)
     {
-        $this->quickdns->command('updatetemplates', [
-            'zone' => $zone->id,
-        ]);
+        $this->quickdns->setTemplates($zone, array_values(array_filter(
+            $this->templatesOf($zone),
+            fn (int $id) => $id !== $this->id,
+        )));
 
         return $this;
+    }
+
+    /**
+     * The ids of the templates the zone has right now. The zones page carries them, so no lookup
+     * is needed for a zone that came from there.
+     *
+     * @return int[]
+     */
+    private function templatesOf(Zone $zone): array
+    {
+        if ($zone->templateIds !== null) {
+            return $zone->templateIds;
+        }
+
+        return $this->quickdns->getZone($zone->domain)->templateIds;
     }
 }

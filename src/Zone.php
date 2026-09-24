@@ -20,6 +20,22 @@ class Zone extends BaseModel
     public $groups;
 
     /**
+     * The ids of the templates the zone uses, as the zones page carries them. Null when the zone
+     * did not come from that page, which is not the same as the empty list.
+     *
+     * @var int[]|null
+     */
+    public $templateIds = null;
+
+    /**
+     * The ids of the groups the zone is in, as the zones page carries them. Null when the zone did
+     * not come from that page.
+     *
+     * @var int[]|null
+     */
+    public $groupIds = null;
+
+    /**
      * Zone constructor.
      *
      * @param  null  $domain
