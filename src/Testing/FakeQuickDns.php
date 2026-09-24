@@ -284,8 +284,19 @@ final class FakeQuickDns
                 return new FulfilledPromise(new Response(500, ['Content-Type' => 'text/html'], 'Internal Server Error'));
             }
             array_splice($session['rows'], $row, 1);
-            $session['bad'] = [];
-            $session['errors'] = [];
+            // Only the deleted row stops being bad, and the rows after it shift up. Clearing every
+            // rejection here would let the fake save a session the live service would not.
+            $keep = [];
+            foreach ($session['bad'] as $index => $bad) {
+                if ($bad === $row) {
+                    unset($session['errors'][$index]);
+
+                    continue;
+                }
+                $keep[$index] = $bad > $row ? $bad - 1 : $bad;
+            }
+            $session['bad'] = array_values($keep);
+            $session['errors'] = array_values($session['errors']);
             $actions[] = ['action' => 'deleterow', 'row' => $row];
         }
 
@@ -325,7 +336,7 @@ final class FakeQuickDns
             return $this->e((string) array_shift($this->forcedErrors));
         }
         foreach (['name', 'value'] as $field) {
-            if (trim((string) $record[$field]) === '' || preg_match('/["\\\']|[^\x20-\x7e]/', (string) $record[$field])) {
+            if (trim((string) $record[$field]) === '' || preg_match('/["\'\\\\]|[^\x20-\x7e]/', (string) $record[$field])) {
                 return "'".$this->e((string) $record[$field])."' indeholder ugyldige tegn.&lt;br&gt;";
             }
         }

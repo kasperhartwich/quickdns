@@ -219,7 +219,16 @@ class QuickDns
         }
 
         $this->editing = true;
-        $session = ZoneEditSession::open($this, (string) $id, $this->page('editzone', ['id' => $id]));
+        try {
+            $session = ZoneEditSession::open($this, (string) $id, $this->page('editzone', ['id' => $id]));
+        } catch (\Throwable $opening) {
+            // Opening is a request of its own, and a failed one must not leave the client thinking
+            // a zone is still being edited.
+            $this->editing = false;
+
+            throw $opening;
+        }
+
         $records = new RecordSet($session);
         try {
             $result = $changes($records);
@@ -267,10 +276,12 @@ class QuickDns
      */
     public function setTemplates(Zone|int|string $zone, array $templates): void
     {
+        $ids = $this->idsOf($templates, fn (string $name) => $this->getTemplate($name)->id);
         $this->command('updatetemplates', [
             'zone' => $this->zoneId($zone),
-            'template' => $this->idsOf($templates, fn (string $name) => $this->getTemplate($name)->id),
+            'template' => $ids,
         ]);
+        $this->rememberOnZone($zone, 'templateIds', $ids);
     }
 
     /**
@@ -282,10 +293,26 @@ class QuickDns
      */
     public function setGroups(Zone|int|string $zone, array $groups): void
     {
+        $ids = $this->idsOf($groups, fn (string $name) => $this->getGroup($name)->id);
         $this->command('updategroups', [
             'zone' => $this->zoneId($zone),
-            'group' => $this->idsOf($groups, fn (string $name) => $this->getGroup($name)->id),
+            'group' => $ids,
         ]);
+        $this->rememberOnZone($zone, 'groupIds', $ids);
+    }
+
+    /**
+     * A Zone object carries the ids it was read with, and the next add or remove is built on them,
+     * so it has to learn what was just set. Otherwise adding two templates one after the other
+     * through the same object keeps only the second.
+     *
+     * @param  int[]|string[]  $ids
+     */
+    private function rememberOnZone(Zone|int|string $zone, string $property, array $ids): void
+    {
+        if ($zone instanceof Zone) {
+            $zone->$property = array_map('intval', $ids);
+        }
     }
 
     /**

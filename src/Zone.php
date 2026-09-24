@@ -2,6 +2,8 @@
 
 namespace QuickDns;
 
+use QuickDns\Exceptions\InvalidRecord;
+
 /**
  * Class Zone
  *
@@ -110,11 +112,7 @@ class Zone extends BaseModel
      */
     public function replaceRecord(Record $record, Record $with): Record
     {
-        return $this->edit(function (RecordSet $records) use ($record, $with) {
-            $found = $records->sole($record->name, $record->type, $record->value);
-
-            return $records->replace($found, $with);
-        });
+        return $this->edit(fn (RecordSet $records) => $records->replace($this->same($records, $record), $with));
     }
 
     /**
@@ -122,9 +120,23 @@ class Zone extends BaseModel
      */
     public function deleteRecord(Record $record): void
     {
-        $this->edit(function (RecordSet $records) use ($record) {
-            $records->remove($records->sole($record->name, $record->type, $record->value));
-        });
+        $this->edit(fn (RecordSet $records) => $records->remove($this->same($records, $record)));
+    }
+
+    /**
+     * The same record inside the session. Every field counts, or two MX records that differ only
+     * in priority would be ambiguous.
+     *
+     * @throws InvalidRecord when the zone has no such record, or more than one
+     */
+    private function same(RecordSet $records, Record $record): Record
+    {
+        $matches = array_values(array_filter($records->all(), fn (Record $candidate) => $candidate->matches($record)));
+        if (count($matches) !== 1) {
+            throw new InvalidRecord(count($matches).' records match '.trim($record->name.' '.$record->type.' '.$record->value).', not one.');
+        }
+
+        return $matches[0];
     }
 
     /**
