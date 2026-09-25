@@ -143,7 +143,12 @@ class QuickDns
             }
             $zone_data = [$node->getAttribute('zoneid')];
             foreach ($node->getElementsByTagName('td') as $td) {
-                $zone_data[] = trim($td->nodeValue);
+                $zone_data[] = trim((string) $td->nodeValue);
+            }
+            // The id plus the six columns. A column more or less means the page changed and the
+            // values below would silently be read from the wrong ones.
+            if (! ctype_digit($zone_data[0]) || count($zone_data) !== 7) {
+                throw new UnrecognisedPage('Unexpected row on the zones page: '.implode(' | ', array_slice($zone_data, 0, 7)));
             }
             //Generate zone
             $zone = new Zone($this, $zone_data[2]);
@@ -271,6 +276,73 @@ class QuickDns
     }
 
     /**
+     * A row must have the columns this library reads, no more and no fewer: a column added or
+     * removed would shift every value after it without a word.
+     *
+     * @throws UnrecognisedPage
+     */
+    private function expectCells(Crawler $row, int $expected, string $page): void
+    {
+        $cells = $row->filterXPath('//td')->count();
+        if ($cells !== $expected) {
+            throw new UnrecognisedPage('A row on the '.$page.' page has '.$cells.' cells, not '.$expected);
+        }
+    }
+
+    /**
+     * The text of a row's nth cell.
+     *
+     * @throws UnrecognisedPage when the row has no such cell
+     */
+    private function cell(Crawler $row, int $cell, string $page): string
+    {
+        $node = $row->filterXPath('//td['.$cell.']');
+        if (! $node->count()) {
+            throw new UnrecognisedPage('A row on the '.$page.' page has no cell '.$cell);
+        }
+
+        return trim($node->text());
+    }
+
+    /**
+     * An attribute of the node the XPath points at.
+     *
+     * @throws UnrecognisedPage when the node or the attribute is missing
+     */
+    private function attribute(Crawler $row, string $xpath, string $attribute, string $page): string
+    {
+        $node = $row->filterXPath($xpath);
+
+        return ($node->count() ? $node->attr($attribute) : null)
+            ?? throw new UnrecognisedPage('A row on the '.$page.' page has no '.$attribute.' at '.$xpath);
+    }
+
+    /**
+     * The id the pattern picks out. QuickDNS keeps them in hrefs and onclick handlers, and a page
+     * that no longer carries one must not quietly become id 0.
+     *
+     * @throws UnrecognisedPage when the pattern does not match
+     */
+    private function idIn(string $subject, string $pattern, string $page): int
+    {
+        if (! preg_match($pattern, $subject, $match)) {
+            throw new UnrecognisedPage('No id in "'.$subject.'" on the '.$page.' page');
+        }
+
+        return (int) $match[1];
+    }
+
+    /**
+     * A list cell: names separated by commas, or "Ingen" for none.
+     *
+     * @return string[]
+     */
+    private function names(string $cell): array
+    {
+        return $cell === 'Ingen' || $cell === '' ? [] : explode(', ', $cell);
+    }
+
+    /**
      * The ids in one of the zone row's onclick calls, e.g. groups(rowIndex, new Array(), new
      * Array('738')) where the second array holds the groups the zone is a member of.
      *
@@ -382,13 +454,14 @@ class QuickDns
     {
         return $this->listRows('templates', 'zone_table')
             ->each(function (Crawler $tr) {
-                preg_match('/\w+\?id=(\d+)/m', $tr->filterXPath('//td[1]/a')->attr('href'), $match);
-                $template = new Template($this, $tr->filterXPath('//td[1]')->text());
-                $template->id = (int) $match[1];
-                $template->name = $tr->filterXPath('//td[1]')->text();
-                $template->zones = (int) $tr->filterXPath('//td[2]')->text();
-                $template->groups = $tr->filterXPath('//td[3]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[3]')->text());
-                $template->updated = $tr->filterXPath('//td[4]')->text();
+                $this->expectCells($tr, 6, 'templates');
+                $name = $this->cell($tr, 1, 'templates');
+                $template = new Template($this, $name);
+                $template->id = $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\?id=(\d+)(?:&|$)/', 'templates');
+                $template->name = $name;
+                $template->zones = (int) $this->cell($tr, 2, 'templates');
+                $template->groups = $this->names($this->cell($tr, 3, 'templates'));
+                $template->updated = $this->cell($tr, 4, 'templates');
 
                 return $template;
             });
@@ -417,12 +490,13 @@ class QuickDns
     {
         $groups = $this->listRows('groups', 'group_table')
             ->each(function (Crawler $tr) {
-                preg_match('/\w+\s\=\s(\d+)\;.+/m', $tr->filterXPath('//td[2]/a')->attr('onclick'), $match);
-                $group = new Group($this, $tr->filterXPath('//td[1]')->text());
-                $group->id = (int) $match[1];
-                $group->name = $tr->filterXPath('//td[1]')->text();
-                $group->members = $tr->filterXPath('//td[2]')->text() == 'Ingen' ? [] : explode(', ', $tr->filterXPath('//td[2]')->text());
-                $group->updated = $tr->filterXPath('//td[3]')->text();
+                $this->expectCells($tr, 4, 'groups');
+                $name = $this->cell($tr, 1, 'groups');
+                $group = new Group($this, $name);
+                $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
+                $group->name = $name;
+                $group->members = $this->names($this->cell($tr, 2, 'groups'));
+                $group->updated = $this->cell($tr, 3, 'groups');
 
                 return $group;
             });
