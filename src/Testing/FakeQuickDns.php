@@ -47,7 +47,7 @@ final class FakeQuickDns
     /** @var array<int, array{domain: string, templates: int[], groups: int[], records: array<int, array>, updated: string}> */
     private array $zones = [];
 
-    /** @var array<int, array{name: string, groups: int[], updated: string}> */
+    /** @var array<int, array{name: string, groups: int[], records: array<int, array>, updated: string}> */
     private array $templates = [];
 
     /** @var array<int, array{name: string}> */
@@ -63,7 +63,7 @@ final class FakeQuickDns
      * Open zone edit sessions, keyed by session key: the pending table, the rows marked bad, and
      * the errors reported so far.
      *
-     * @var array<string, array{zone: int, rows: array<int, ?array>, bad: int[], errors: string[], seq: int}>
+     * @var array<string, array{what: string, zone: int, rows: array<int, ?array>, bad: int[], errors: string[], seq: int}>
      */
     private array $editSessions = [];
 
@@ -109,10 +109,6 @@ final class FakeQuickDns
             'records' => [],
             'updated' => $this->now(),
         ];
-        foreach (['ns1', 'ns2', 'ns3', 'ns4'] as $ns) {
-            $this->zones[$id]['records'][] = ['name' => '@', 'ttl' => null, 'type' => 'NS', 'priority' => null, 'value' => $ns.'.quickdns.dk.', 'template' => 'QuickDNS global'];
-        }
-
         return $id;
     }
 
@@ -125,12 +121,30 @@ final class FakeQuickDns
     }
 
     /**
+     * Add a record to a template, e.g. addTemplateRecord('standard', 'www', 'A', '192.0.2.10').
+     */
+    public function addTemplateRecord(string $template, string $name, string $type, string $value, ?int $ttl = 3600, ?int $priority = null): void
+    {
+        $this->templates[$this->templateId($template)]['records'][] = ['name' => $name, 'ttl' => $ttl, 'type' => $type, 'priority' => $priority, 'value' => $value, 'template' => null];
+    }
+
+    /**
+     * The template's records, as arrays.
+     *
+     * @return array<int, array>
+     */
+    public function recordsOfTemplate(string $template): array
+    {
+        return $this->templates[$this->templateId($template)]['records'];
+    }
+
+    /**
      * @return int The template's id
      */
     public function addTemplate(string $name): int
     {
         $id = $this->nextId++;
-        $this->templates[$id] = ['name' => $name, 'groups' => [], 'updated' => $this->now()];
+        $this->templates[$id] = ['name' => $name, 'groups' => [], 'records' => [], 'updated' => $this->now()];
 
         return $id;
     }
@@ -204,7 +218,7 @@ final class FakeQuickDns
      */
     public function recordsOf(string $domain): array
     {
-        return $this->zones[$this->zoneId($domain)]['records'];
+        return $this->recordsOfZone($this->zoneId($domain));
     }
 
     /**
@@ -214,7 +228,7 @@ final class FakeQuickDns
     {
         $id = $this->zoneId($domain);
         foreach ($this->editSessions as $session) {
-            if ($session['zone'] === $id && $session['rows'] !== $this->pendingRows($id)) {
+            if ($session['what'] === 'zone' && $session['zone'] === $id && $session['rows'] !== $this->pendingRows($id)) {
                 return true;
             }
         }
@@ -227,9 +241,33 @@ final class FakeQuickDns
      *
      * @return array<int, ?array>
      */
-    private function pendingRows(int $id): array
+    private function pendingRows(int $id, string $what = 'zone'): array
     {
-        return array_merge([null], array_values($this->zones[$id]['records']));
+        $records = $what === 'template' ? $this->templates[$id]['records'] : $this->recordsOfZone($id);
+
+        return array_merge([null], array_values($records));
+    }
+
+    /**
+     * What the zone page shows: the records of every template it uses, marked as theirs and
+     * locked, and then the zone's own.
+     *
+     * @return array<int, array>
+     */
+    private function recordsOfZone(int $id): array
+    {
+        // Like QuickDNS, every zone starts with the four NS records of "QuickDNS global".
+        $records = [];
+        foreach (['ns1', 'ns2', 'ns3', 'ns4'] as $ns) {
+            $records[] = ['name' => '@', 'ttl' => null, 'type' => 'NS', 'priority' => null, 'value' => $ns.'.quickdns.dk.', 'template' => 'QuickDNS global'];
+        }
+        foreach ($this->zones[$id]['templates'] as $template) {
+            foreach ($this->templates[$template]['records'] as $record) {
+                $records[] = ['template' => $this->templates[$template]['name']] + $record;
+            }
+        }
+
+        return array_merge($records, array_values($this->zones[$id]['records']));
     }
 
     /**
@@ -309,19 +347,27 @@ final class FakeQuickDns
      * editzonedone: save the pending table, or throw it away. A session holding a rejected record
      * saves nothing at all, exactly like the live service.
      */
-    private function zoneEditDone(array $query): PromiseInterface
+    private function zoneEditDone(array $query, string $what): PromiseInterface
     {
         $key = (string) ($query['zkey'] ?? '');
-        if (isset($this->editSessions[$key])) {
+        // editzonedone on a template saves nothing, and the other way round, exactly like the
+        // live service.
+        if (isset($this->editSessions[$key]) && $this->editSessions[$key]['what'] === $what) {
             $session = $this->editSessions[$key];
             // Like the live service: the wrong sequence number saves nothing, without a word.
             $sequenceMatches = (int) ($query['seq'] ?? -1) === $session['seq'];
             if ((string) ($query['save'] ?? '0') === '1' && $session['bad'] === [] && $sequenceMatches) {
                 $records = array_values(array_filter($session['rows']));
-                // QuickDNS sorts the zone when it saves, template records first.
+                // QuickDNS sorts when it saves, template records first.
                 usort($records, fn ($a, $b) => [$a['template'] === null, $a['name'], $a['type']] <=> [$b['template'] === null, $b['name'], $b['type']]);
-                $this->zones[$session['zone']]['records'] = $records;
-                $this->zones[$session['zone']]['updated'] = $this->now();
+                if ($what === 'template') {
+                    $this->templates[$session['zone']]['records'] = $records;
+                    $this->templates[$session['zone']]['updated'] = $this->now();
+                } else {
+                    // A template's rows belong to the template, not to the zone.
+                    $this->zones[$session['zone']]['records'] = array_values(array_filter($records, fn ($record) => $record['template'] === null));
+                    $this->zones[$session['zone']]['updated'] = $this->now();
+                }
             }
             unset($this->editSessions[$key]);
         }
@@ -409,8 +455,12 @@ final class FakeQuickDns
             'templates' => $this->templatesPage(),
             'groups' => $this->groupsPage(),
             'editzone' => $this->editZonePage((int) ($query['id'] ?? 0)),
+            'edittemplate' => $this->editTemplatePage((int) ($query['id'] ?? 0)),
+            'renametemplate' => $this->renameCommand($this->templates, (int) ($query['zone'] ?? 0), (string) ($query['name'] ?? ''), 'Skabelonen', 'Skabelonens'),
+            'renamegroup' => $this->renameCommand($this->groups, (int) ($query['group'] ?? 0), (string) ($query['name'] ?? ''), 'Gruppen', 'Gruppens'),
             'submitzonechange' => $this->zoneChange($query),
-            'editzonedone' => $this->zoneEditDone($query),
+            'editzonedone' => $this->zoneEditDone($query, 'zone'),
+            'edittemplatedone' => $this->zoneEditDone($query, 'template'),
             'addzone' => $this->addZoneCommand((string) ($query['zone'] ?? '')),
             'delzone' => $this->deleteCommand($this->zones, (int) ($query['id'] ?? 0), 'Zonen er slettet', 'Zonen findes ikke'),
             'addtemplate' => $this->addTemplateCommand((string) ($query['zone'] ?? '')),
@@ -498,13 +548,41 @@ final class FakeQuickDns
             ."</tr>\n".$rows.'</table>');
     }
 
+    private function editTemplatePage(int $id): PromiseInterface
+    {
+        if (! isset($this->templates[$id])) {
+            return $this->page('Fejl', '<p>Skabelonen findes ikke</p>');
+        }
+        $key = bin2hex(random_bytes(32));
+        $this->editSessions[$key] = ['what' => 'template', 'zone' => $id, 'rows' => $this->pendingRows($id, 'template'), 'bad' => [], 'errors' => [], 'seq' => 0];
+
+        return $this->page('Mine skabeloner', '<p>Skabelon: '.$this->e($this->templates[$id]['name']).'</p>'
+            .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', true); };</script>'
+            .$this->recordsTable($this->templates[$id]['records']));
+    }
+
     private function editZonePage(int $id): PromiseInterface
     {
         if (! isset($this->zones[$id])) {
             return $this->page('Fejl', '<p>Zonen findes ikke</p>');
         }
+        $key = bin2hex(random_bytes(32));
+        $this->editSessions[$key] = ['what' => 'zone', 'zone' => $id, 'rows' => $this->pendingRows($id), 'bad' => [], 'errors' => [], 'seq' => 0];
+
+        return $this->page('Mine zoner', '<p>Zone: '.$this->e($this->zones[$id]['domain']).'</p>'
+            .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', false); };</script>'
+            .$this->recordsTable($this->recordsOfZone($id)));
+    }
+
+    /**
+     * The record table both the zone page and the template page carry.
+     *
+     * @param  array<int, array>  $records
+     */
+    private function recordsTable(array $records): string
+    {
         $rows = '';
-        foreach ($this->zones[$id]['records'] as $record) {
+        foreach ($records as $record) {
             $locked = $record['template'] !== null
                 ? '<td title="Denne record er tilf&oslash;jet automatisk af skabelonen &quot;'.$this->e($record['template']).'&quot;">-</td>'
                 : null;
@@ -519,15 +597,10 @@ final class FakeQuickDns
                 ."</tr>\n";
         }
 
-        $key = bin2hex(random_bytes(32));
-        $this->editSessions[$key] = ['zone' => $id, 'rows' => $this->pendingRows($id), 'bad' => [], 'errors' => [], 'seq' => 0];
-
-        return $this->page('Mine zoner', '<p>Zone: '.$this->e($this->zones[$id]['domain']).'</p>'
-            .'<script type="text/javascript">window.onload = function () { init(\''.$key.'\', false); };</script>'
-            .'<table class="listtable records" id="zone_table"><tr class="listheader">'
+        return '<table class="listtable records" id="zone_table"><tr class="listheader">'
             .'<th class="listheader">Record</th><th class="listheader">TTL</th><th class="listheader">Type</th>'
             .'<th class="listheader">Prioritet</th><th class="listheader">Værdi</th><th class="listheader">Ret</th><th class="listheader">Slet</th>'
-            ."</tr>\n".$rows.'</table>');
+            ."</tr>\n".$rows.'</table>';
     }
 
     private function addZoneCommand(string $domain): PromiseInterface
@@ -589,6 +662,22 @@ final class FakeQuickDns
         }
 
         return $this->deleteCommand($this->groups, $id, 'Gruppen er slettet', 'Gruppen findes ikke');
+    }
+
+    /**
+     * renametemplate / renamegroup.
+     */
+    private function renameCommand(array &$items, int $id, string $name, string $subject, string $possessive): PromiseInterface
+    {
+        if (! isset($items[$id])) {
+            return $this->xml('ERROR', $subject.' findes ikke');
+        }
+        if (! $this->validName($name)) {
+            return $this->xml('ERROR', $possessive.' navn er ugyldigt');
+        }
+        $items[$id]['name'] = $name;
+
+        return $this->xml('OK', $subject.' er omdøbt');
     }
 
     private function deleteCommand(array &$items, int $id, string $ok, string $missing): PromiseInterface

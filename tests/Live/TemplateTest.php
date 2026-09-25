@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace QuickDns\Tests\Live;
 
+use QuickDns\Record;
+use QuickDns\RecordSet;
+use QuickDns\RecordType;
 use QuickDns\Template;
 use QuickDns\Zone;
 
@@ -72,6 +75,68 @@ final class TemplateTest extends TestCase
         } finally {
             $quickDns->getZone($this->testDomain)->delete();
             $second->delete();
+        }
+    }
+
+    public function test_records_on_a_template()
+    {
+        $template = (new Template($this->quickDns, 'quickdns-api-records-template'))->create();
+
+        try {
+            $this->assertSame([], $template->getRecords(), 'A new template has no records.');
+
+            $template->edit(function (RecordSet $records) {
+                $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+                $records->add('@', RecordType::MX, 'mx1.example.dk.', ttl: 3600, priority: 10);
+            });
+
+            $summary = array_map(fn (Record $r) => "{$r->name} {$r->type} {$r->priority} {$r->value}", $template->getRecords());
+            $this->assertContains('www A  192.0.2.10', $summary);
+            $this->assertContains('@ MX 10 mx1.example.dk.', $summary);
+
+            // A zone using the template gets them, marked as the template's.
+            $zone = (new Zone($this->quickDns, $this->testDomain))->create();
+            $template->addZone($this->quickDns->getZone($this->testDomain));
+            $fromTemplate = array_values(array_filter(
+                $this->quickDns->getZone($this->testDomain)->getRecords(),
+                fn (Record $r) => $r->template === 'quickdns-api-records-template',
+            ));
+            $this->assertCount(2, $fromTemplate);
+            $this->assertTrue($fromTemplate[0]->isLocked());
+
+            $this->quickDns->getZone($this->testDomain)->delete();
+
+            $template->deleteRecord($template->getRecords()[0]);
+            $this->assertCount(1, $template->getRecords());
+        } finally {
+            foreach ($this->quickDns->getZones() as $zone) {
+                if ($zone->domain === $this->testDomain) {
+                    $zone->delete();
+                }
+            }
+            $template->delete();
+        }
+    }
+
+    public function test_rename_a_template_and_a_group()
+    {
+        $template = (new Template($this->quickDns, 'quickdns-api-rename-me'))->create();
+
+        $group = $this->quickDns->getGroup($this->testGroup);
+
+        try {
+            $template->rename('quickdns-api-renamed');
+
+            $this->assertSame('quickdns-api-renamed', $template->name);
+            $this->assertSame($template->id, $this->quickDns->getTemplate('quickdns-api-renamed')->id);
+
+            $group->rename('quickdns-api-renamed-group');
+            $this->assertSame($group->id, $this->quickDns->getGroup('quickdns-api-renamed-group')->id);
+        } finally {
+            // The account is shared by every test in the suite, so the group goes back whatever
+            // happens above.
+            $group->rename($this->testGroup);
+            $template->delete();
         }
     }
 }

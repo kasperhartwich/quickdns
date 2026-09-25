@@ -153,8 +153,29 @@ $quickDns->setTemplates($zone, []);              // removes them all
 $quickDns->setGroups($zone, ['my-group']);
 ```
 
-`Template` and `Group` also have `create()` and `delete()`, just like `Zone`. QuickDNS does not
-answer with a new group's id, so fetch a group with `getGroup()` after creating it.
+`Template` and `Group` also have `create()`, `delete()` and `rename()`, just like `Zone`. QuickDNS
+does not answer with a new group's id, so fetch a group with `getGroup()` after creating it.
+
+### A template's records
+
+A template holds records of its own, and every zone using it gets them. They read and write
+exactly like a zone's, and on the zone they show up as locked:
+
+```php
+$template = $quickDns->getTemplate('my-template');
+
+foreach ($template->getRecords() as $record) {
+    echo $record->name, ' ', $record->type, ' ', $record->value, PHP_EOL;
+}
+
+$template->edit(function (RecordSet $records) {
+    $records->add('@', RecordType::MX, 'mx1.example.dk.', ttl: 3600, priority: 10);
+    $records->add('www', 'A', '192.0.2.10', ttl: 3600);
+});
+
+$template->addRecord('mail', 'A', '192.0.2.20', ttl: 3600);
+$template->rename('another-name');
+```
 
 ### Example: set up several domains from one template
 
