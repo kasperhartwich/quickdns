@@ -10,11 +10,14 @@ use QuickDns\Record;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
- * An edit session on one zone.
+ * An edit session on one zone or one template.
  *
- * QuickDNS keeps the changes server side until editzonedone: submitzonechange applies one change
- * at a time to a pending copy of the table, and answers with what it did to which row. This class
- * mirrors that table so a record can be addressed by the row it sits on right now.
+ * QuickDNS keeps the changes server side until the session is closed: submitzonechange applies one
+ * change at a time to a pending copy of the table, and answers with what it did to which row. This
+ * class mirrors that table so a record can be addressed by the row it sits on right now.
+ *
+ * A template is edited exactly like a zone, except that it is saved with edittemplatedone.
+ * editzonedone on a template answers with an ordinary page and saves nothing.
  *
  * @internal
  */
@@ -40,24 +43,27 @@ final class ZoneEditSession
 
     private function __construct(
         private readonly QuickDns $quickDns,
-        private readonly string $zoneId,
+        private readonly string $id,
         private readonly string $key,
+        private readonly string $what,
     ) {
     }
 
     /**
-     * @throws UnrecognisedPage when the page is not a zone page, or carries no session key
+     * @param  string  $what  'zone' or 'template', which decides how the session is saved
+     *
+     * @throws UnrecognisedPage when the page is not one this library knows, or carries no key
      */
-    public static function open(QuickDns $quickDns, string $zoneId, Crawler $page): self
+    public static function open(QuickDns $quickDns, string $id, Crawler $page, string $what = 'zone'): self
     {
-        $table = ZoneTable::fromPage($page, 'zone '.$zoneId);
+        $table = ZoneTable::fromPage($page, $what.' '.$id);
 
         // The session key sits in the page's onload: init('<64 hex>', false).
         if (! preg_match("/init\(\s*'([0-9a-f]{8,})'/", $page->html(), $match)) {
-            throw new UnrecognisedPage('No edit session key on the zone page for zone '.$zoneId);
+            throw new UnrecognisedPage('No edit session key on the '.$what.' page for '.$what.' '.$id);
         }
 
-        $session = new self($quickDns, $zoneId, $match[1]);
+        $session = new self($quickDns, $id, $match[1], $what);
         $session->rows = $table->byRow();
 
         return $session;
@@ -147,10 +153,10 @@ final class ZoneEditSession
 
             return;
         }
-        $page = $this->quickDns->request('editzonedone', ['save' => 1, 'seq' => $this->sequence, 'zkey' => $this->key]);
+        $page = $this->quickDns->request($this->done(), ['save' => 1, 'seq' => $this->sequence, 'zkey' => $this->key]);
         $this->finished = true;
         if (! str_contains($page, 'Log ud')) {
-            throw new UnrecognisedPage('Unexpected page after saving zone '.$this->zoneId);
+            throw new UnrecognisedPage('Unexpected page after saving '.$this->what.' '.$this->id);
         }
     }
 
@@ -164,10 +170,19 @@ final class ZoneEditSession
         }
         $this->finished = true;
         try {
-            $this->quickDns->request('editzonedone', ['save' => 0, 'seq' => $this->sequence, 'zkey' => $this->key]);
+            $this->quickDns->request($this->done(), ['save' => 0, 'seq' => $this->sequence, 'zkey' => $this->key]);
         } catch (\Throwable) {
             // An abandoned session leaves nothing behind, so a failed discard changes nothing.
         }
+    }
+
+    /**
+     * Saving a template through editzonedone stores nothing, so the endpoint follows what is being
+     * edited.
+     */
+    private function done(): string
+    {
+        return $this->what === 'template' ? 'edittemplatedone' : 'editzonedone';
     }
 
     private function start(): void
