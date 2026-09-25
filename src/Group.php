@@ -58,9 +58,8 @@ class Group extends BaseModel
     /**
      * Rename the group.
      *
-     * @return $this
      */
-    public function rename(string $name)
+    public function rename(string $name): static
     {
         $this->quickdns->command('renamegroup', [
             'group' => $this->id ?: throw new \BadFunctionCallException('Group is not created yet.'),

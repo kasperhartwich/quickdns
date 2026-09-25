@@ -216,7 +216,7 @@ class QuickDns
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function editTemplate(Template|int|string $template, callable $changes)
+    public function editTemplate(Template|int|string $template, callable $changes): mixed
     {
         return $this->editRecords('template', 'edittemplate', $this->templateId($template), $changes);
     }

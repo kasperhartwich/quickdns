@@ -68,9 +68,8 @@ class Template extends BaseModel
     /**
      * Rename the template. Zones using it follow along, since they are tied to its id.
      *
-     * @return $this
      */
-    public function rename(string $name)
+    public function rename(string $name): static
     {
         $this->quickdns->command('renametemplate', [
             'zone' => $this->id ?: throw new \BadFunctionCallException('Template is not created yet.'),
@@ -98,7 +97,7 @@ class Template extends BaseModel
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function edit(callable $changes)
+    public function edit(callable $changes): mixed
     {
         return $this->quickdns->editTemplate($this, $changes);
     }
