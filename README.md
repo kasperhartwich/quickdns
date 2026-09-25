@@ -177,6 +177,22 @@ $template->addRecord('mail', 'A', '192.0.2.20', ttl: 3600);
 $template->rename('another-name');
 ```
 
+A template's records are applied to each zone exactly as they are written. Nothing is rewritten:
+
+- **Names are relative to the zone.** `@` is the zone's apex, `www` is `www.` plus the zone, and `*` is
+  the wildcard. On a zone, the template row `www A 192.0.2.2` shows as `www A 192.0.2.2`, locked.
+- **`@` is the only placeholder.** As a value it also means the zone's apex, so `alias CNAME @` and
+  `@ MX @` work on every zone. There is no `{domain}`, `$DOMAIN` or similar. On a zone, a value
+  containing `{`, `}` or `$` is rejected ("indeholder ugyldige tegn").
+- **Any other target is literal.** A CNAME, MX or NS target outside the zone needs its trailing dot
+  (`mail.example.dk.`). QuickDNS refuses a CNAME to a bare name such as `www`.
+
+**A template can be saved and still be unusable.** The template page checks less than a zone does,
+so a record the zone would refuse is only caught when the template is applied. Then
+`addZone()` and `setTemplates()` throw `CommandFailed` ("De valgte skabeloner giver 1 fejl i
+zonen"). Nothing is applied, and the zone keeps the templates it had. Records added to a template
+that zones already use show up on those zones straight away.
+
 ### Example: set up several domains from one template
 
 ```php
