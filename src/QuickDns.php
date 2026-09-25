@@ -206,14 +206,49 @@ class QuickDns
      */
     public function editZone(Zone|int|string $zone, callable $changes): mixed
     {
-        $id = $this->zoneId($zone);
+        return $this->editRecords('zone', 'editzone', $this->zoneId($zone), $changes);
+    }
+
+    /**
+     * Change a template's records. Works exactly like editZone(), and a zone using the template
+     * gets the changes.
+     *
+     * @param  callable(RecordSet): mixed  $changes
+     * @return mixed Whatever the closure returned
+     */
+    public function editTemplate(Template|int|string $template, callable $changes): mixed
+    {
+        return $this->editRecords('template', 'edittemplate', $this->templateId($template), $changes);
+    }
+
+    /**
+     * Get a template's records.
+     *
+     * @return Record[]
+     */
+    public function getTemplateRecords(Template|int|string $template): array
+    {
+        $id = $this->templateId($template);
+
+        return ZoneTable::fromPage($this->page('edittemplate', ['id' => $id]), 'template '.$id)->records();
+    }
+
+    /**
+     * @param  string  $what  'zone' or 'template'
+     * @param  string  $page  The page that opens the session
+     * @param  int|string  $id
+     * @param  callable(RecordSet): mixed  $changes
+     * @return mixed
+     */
+    private function editRecords($what, $page, $id, callable $changes)
+    {
         if ($this->editing) {
-            throw new \LogicException('A zone is already being edited: QuickDNS keeps one pending table per session.');
+            throw new \LogicException('A zone or template is already being edited: QuickDNS keeps one pending table per session.');
         }
 
         $this->editing = true;
         try {
-            $session = ZoneEditSession::open($this, (string) $id, $this->page('editzone', ['id' => $id]));
+            $session = ZoneEditSession::open($this, (string) $id, $this->page($page, ['id' => $id]), $what);
         } catch (\Throwable $opening) {
             // Opening is a request of its own, and a failed one must not leave the client thinking
             // a zone is still being edited.
@@ -322,6 +357,13 @@ class QuickDns
 
             return is_numeric($item) ? $item : $lookup((string) $item);
         }, $items));
+    }
+
+    private function templateId(Template|int|string $template): int|string
+    {
+        $id = $template instanceof Template ? $template->id : $template;
+
+        return $id ?: throw new \BadFunctionCallException('Template is not created yet.');
     }
 
     private function zoneId(Zone|int|string $zone): int|string

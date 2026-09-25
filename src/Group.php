@@ -56,6 +56,21 @@ class Group extends BaseModel
     }
 
     /**
+     * Rename the group.
+     *
+     */
+    public function rename(string $name): static
+    {
+        $this->quickdns->command('renamegroup', [
+            'group' => $this->id ?: throw new \BadFunctionCallException('Group is not created yet.'),
+            'name' => $name,
+        ]);
+        $this->name = $name;
+
+        return $this;
+    }
+
+    /**
      * Add a zone to the group, keeping the zone's other groups.
      */
     public function addZone(Zone $zone): static
