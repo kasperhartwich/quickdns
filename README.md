@@ -156,7 +156,9 @@ $zone = $group->removeZone($zone);
 Each of these reads the zone's current templates or groups from QuickDNS first, because QuickDNS
 replaces the whole list, and returns the zone as QuickDNS shows it afterwards.
 
-A zone can use several templates, and `$zone->templates` lists their names. To set the whole list
+A zone can use several templates, and `$zone->templates` lists their names. `$zone->templates()`,
+`$zone->groups()`, `$template->zones()` and `$template->groups()` read the related objects
+themselves, and `$template->zoneCount` says how many zones use a template. To set the whole list
 at once, by name, id or object:
 
 ```php

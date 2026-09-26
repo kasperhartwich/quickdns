@@ -52,6 +52,36 @@ final readonly class Zone extends BaseModel
     }
 
     /**
+     * The templates the zone uses, read from the templates page.
+     *
+     * @return Template[]
+     */
+    public function templates(): array
+    {
+        $ids = $this->templateIds ?? $this->quickdns->getZone($this->domain)->templateIds ?? [];
+
+        return array_values(array_filter(
+            $this->quickdns->getTemplates(),
+            fn (Template $template) => in_array($template->id, $ids, true),
+        ));
+    }
+
+    /**
+     * The groups the zone is in, read from the groups page.
+     *
+     * @return Group[]
+     */
+    public function groups(): array
+    {
+        $ids = $this->groupIds ?? $this->quickdns->getZone($this->domain)->groupIds ?? [];
+
+        return array_values(array_filter(
+            $this->quickdns->getGroups(),
+            fn (Group $group) => in_array($group->id, $ids, true),
+        ));
+    }
+
+    /**
      * Get the zone's records, in the order QuickDNS lists them.
      *
      * @return Record[]

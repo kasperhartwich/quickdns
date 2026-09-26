@@ -29,6 +29,9 @@ abstract readonly class BaseModel
         Group::class => [
             'updated' => 'QuickDNS shows no time for a group',
         ],
+        Template::class => [
+            'zones' => 'use $zoneCount for the number, or zones() for the zones themselves',
+        ],
     ];
 
     public function __construct(public ?int $id = null)

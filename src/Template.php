@@ -13,7 +13,7 @@ use QuickDns\Exceptions\InvalidRecord;
 final readonly class Template extends BaseModel
 {
     /**
-     * @param  int  $zones  How many zones use it
+     * @param  int  $zoneCount  How many zones use it, as the templates page counts them
      * @param  string[]  $groups  The names of the groups it is shared with
      * @param  \DateTimeImmutable|null  $updated  When QuickDNS last changed it, or null when the list does not say
      */
@@ -21,7 +21,7 @@ final readonly class Template extends BaseModel
         private QuickDns $quickdns,
         public string $name,
         ?int $id = null,
-        public int $zones = 0,
+        public int $zoneCount = 0,
         public array $groups = [],
         public ?\DateTimeImmutable $updated = null,
     ) {
@@ -67,7 +67,35 @@ final readonly class Template extends BaseModel
             'name' => $name,
         ]);
 
-        return new self($this->quickdns, $name, $this->id, $this->zones, $this->groups, $this->updated);
+        return new self($this->quickdns, $name, $this->id, $this->zoneCount, $this->groups, $this->updated);
+    }
+
+    /**
+     * The zones using the template, read from the zones page.
+     *
+     * @return Zone[]
+     */
+    public function zones(): array
+    {
+        $id = $this->requireId();
+
+        return array_values(array_filter(
+            $this->quickdns->getZones(),
+            fn (Zone $zone) => in_array($id, $zone->templateIds ?? [], true),
+        ));
+    }
+
+    /**
+     * The groups the template is shared with, read from the groups page.
+     *
+     * @return Group[]
+     */
+    public function groups(): array
+    {
+        return array_values(array_filter(
+            $this->quickdns->getGroups(),
+            fn (Group $group) => in_array($group->name, $this->groups, true),
+        ));
     }
 
     /**
