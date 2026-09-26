@@ -15,6 +15,7 @@ use QuickDns\Exceptions\MissingId;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
 use QuickDns\Internal\ZoneEditSession;
+use QuickDns\Parsing\GroupMembers;
 use QuickDns\Parsing\ZoneTable;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -492,25 +493,27 @@ class QuickDns
     /**
      * Get Groups
      *
-     * @return Group[] Keyed from 1, as 2.2 returned them
+     * @return list<Group>
      */
     public function getGroups(): array
     {
-        $groups = $this->listRows('groups', 'group_table')
-            ->each(function (Crawler $tr) {
-                $this->expectCells($tr, 4, 'groups');
-                $name = $this->cell($tr, 1, 'groups');
-                $group = new Group($this, $name);
-                $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
-                $group->name = $name;
-                $group->members = $this->names($this->cell($tr, 2, 'groups'));
-                // The groups page shows no time: its third cell is the "Ret" link.
+        $page = $this->page('groups');
+        $rows = $this->listRows('groups', 'group_table', $page);
 
-                return $group;
-            });
+        // The list cell only counts the members ("2 medlemmer"); the inline script names them.
+        $scripts = $page->filterXPath('//script[not(@src)]')->each(fn (Crawler $script) => $script->text());
+        $members = GroupMembers::fromScript(implode("\n", $scripts));
 
-        // 2.2 filtered the header row out of the list, so its keys start at 1. Keep them.
-        return $groups ? array_combine(range(1, count($groups)), $groups) : [];
+        return $rows->each(function (Crawler $tr) use ($members) {
+            $this->expectCells($tr, 4, 'groups');
+            $name = $this->cell($tr, 1, 'groups');
+            $group = new Group($this, $name);
+            $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
+            $group->name = $name;
+            $group->members = $members->of($group->id);
+
+            return $group;
+        });
     }
 
     /**
@@ -548,9 +551,9 @@ class QuickDns
      *
      * @throws UnrecognisedPage when the page has no such table
      */
-    private function listRows(string $function, string $tableId): Crawler
+    private function listRows(string $function, string $tableId, ?Crawler $page = null): Crawler
     {
-        $table = $this->page($function)->filterXPath('//table[@id="'.$tableId.'"]');
+        $table = ($page ?? $this->page($function))->filterXPath('//table[@id="'.$tableId.'"]');
         if (! $table->count()) {
             throw new UnrecognisedPage('No '.$tableId.' on the '.$function.' page');
         }

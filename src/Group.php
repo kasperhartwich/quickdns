@@ -10,7 +10,7 @@ use QuickDns\Exceptions\MissingId;
  * Class Group
  *
  * @property string $name
- * @property array $members
+ * @property Member[] $members
  */
 class Group extends BaseModel
 {
@@ -18,6 +18,9 @@ class Group extends BaseModel
 
     public $name;
 
+    /**
+     * @var Member[]
+     */
     public $members = [];
 
     /**

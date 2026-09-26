@@ -41,8 +41,7 @@ the string:
 $zone->updated?->format('Y-m-d H:i:s');
 ```
 
-`Group::$updated` held the text "Ret", the label of the groups page's rename link, and is now always
-null: QuickDNS shows no time for a group.
+`Group::$updated` is removed, see Groups below.
 
 ### `Zone::$id` is an int
 
@@ -52,3 +51,12 @@ id was an int. It is now an int too. This one fails silently: a strict compariso
 matching without an error. So does a `string` parameter or property the id is passed to under
 `strict_types`, though that one at least throws a TypeError. Search your code for places that
 compare or store zone ids.
+
+### Groups
+
+- `getGroups()` returns a list indexed from 0. 2.x kept the keys from 1 that 2.2 had.
+- `Group::$members` held the text of the list cell, which only counts the members (`['2 medlemmer']`),
+  or `[]` for "Ingen". It now holds `QuickDns\Member` objects read from the page's member list, each
+  with `id`, `name`, `email` and `confirmed` (false while an invitation is not accepted).
+- `Group::$updated` is gone. 2.x filled it with "Ret", the label of the rename link, since the groups
+  page shows no time.

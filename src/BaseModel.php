@@ -21,11 +21,6 @@ class BaseModel
     public $id;
 
     /**
-     * When QuickDNS last changed it, or null when the list does not say.
-     */
-    public ?\DateTimeImmutable $updated = null;
-
-    /**
      * A time as the list pages show it, "2026-09-22 18:21:28". An empty cell or "-" is no time;
      * anything else that does not parse means the page changed.
      *

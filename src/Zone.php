@@ -25,6 +25,11 @@ class Zone extends BaseModel
     public $groups;
 
     /**
+     * When QuickDNS last changed it, or null when the list does not say.
+     */
+    public ?\DateTimeImmutable $updated = null;
+
+    /**
      * The ids of the templates the zone uses, as the zones page carries them. Null when the zone
      * did not come from that page, which is not the same as the empty list.
      *
