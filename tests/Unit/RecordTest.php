@@ -102,7 +102,7 @@ final class RecordTest extends TestCase
     public function test_logged_out_page_throws_unrecognised_page()
     {
         $this->expectException(UnrecognisedPage::class);
-        $this->quickDns(['login-failed'])->getRecords(17363);
+        $this->quickDns(['login-failed', 'login-ok', 'login-failed'])->getRecords(17363);
     }
 
     public function test_zone_without_id()

@@ -40,6 +40,11 @@ credentials throw `LoginFailed` from that first request:
 $quickDns = QuickDns::lazy('my@email.example', 'password');
 ```
 
+QuickDNS ends a login session after a while. When a request is answered with the login page, the
+client logs in again and sends that request once more, so a long-lived client keeps working. In
+the middle of an edit it cannot: the pending changes went with the old session, so the edit throws
+`UnrecognisedPage` and nothing is saved.
+
 To send the requests through your own Guzzle client (middleware for logging or rate limiting, or
 a `MockHandler` in tests), pass it as the third argument. QuickDns keeps the login session
 cookies itself, so the client needs no cookie jar:
