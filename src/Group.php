@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace QuickDns;
 
+use QuickDns\Exceptions\MissingId;
+
 /**
  * Class Group
  *
@@ -46,7 +48,7 @@ class Group extends BaseModel
     public function delete(): bool
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Group is not created yet.');
+            throw new MissingId('Group is not created yet.');
         }
         $this->quickdns->command('delgroup', [
             'id' => $this->id,
@@ -62,7 +64,7 @@ class Group extends BaseModel
     public function rename(string $name): static
     {
         $this->quickdns->command('renamegroup', [
-            'group' => $this->id ?: throw new \BadFunctionCallException('Group is not created yet.'),
+            'group' => $this->id ?: throw new MissingId('Group is not created yet.'),
             'name' => $name,
         ]);
         $this->name = $name;

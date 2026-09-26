@@ -20,7 +20,7 @@ final class TemplateTest extends TestCase
 
     public function test_create_already_exists()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Skabelonen eksisterer allerede');
 
         (new Template($this->quickDns, 'quickdns-api-template'))->create();
@@ -28,7 +28,7 @@ final class TemplateTest extends TestCase
 
     public function test_create_fail_illegal_template_name()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Skabelonens navn er ugyldigt');
 
         (new Template($this->quickDns, '@@'))->create();
@@ -38,7 +38,7 @@ final class TemplateTest extends TestCase
     {
         $this->quickDns->getTemplate('quickdns-api-template')->delete();
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\QuickDns\Exceptions\NotFound::class);
         $this->expectExceptionMessage('Unknown template');
         $this->quickDns->getTemplate('quickdns-api-template');
     }

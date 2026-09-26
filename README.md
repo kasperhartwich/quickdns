@@ -212,18 +212,25 @@ foreach (['domain1.dk', 'domain2.dk', 'domain3.dk'] as $domain) {
 
 ### Errors
 
-Every exception from QuickDNS implements `QuickDns\Exceptions\QuickDnsException`:
+Every exception from QuickDNS extends the abstract `QuickDns\Exceptions\QuickDnsException`:
 
 | Exception | When | Extends |
 |---|---|---|
-| `LoginFailed` | Wrong email or password | `InvalidArgumentException` |
-| `CommandFailed` | QuickDNS rejected a command. The message is QuickDNS' own, in Danish, e.g. `Zonen eksisterer allerede` | `InvalidArgumentException` |
-| `NotFound` | `getZone()`, `getTemplate()` or `getGroup()` found nothing | `UnexpectedValueException` |
-| `InvalidRecord` | A record QuickDNS would reject, caught before sending | `InvalidArgumentException` |
+| `LoginFailed` | Wrong email or password | `QuickDnsException` |
+| `CommandFailed` | QuickDNS rejected a command. The message is QuickDNS' own, in Danish, e.g. `Zonen eksisterer allerede` | `QuickDnsException` |
+| `NotFound` | `getZone()`, `getTemplate()` or `getGroup()` found nothing | `QuickDnsException` |
+| `MissingId` | The zone, template or group has no id yet, so it cannot be changed | `QuickDnsException` |
+| `InvalidRecord` | A record QuickDNS would reject, caught before sending | `QuickDnsException` |
 | `RecordLocked` | The record belongs to a template | `InvalidRecord` |
 | `RecordRejected` | QuickDNS rejected a change, so the edit was discarded | `CommandFailed` |
-| `StaleRecord` | The record was replaced or removed earlier in the same edit | `InvalidArgumentException` |
-| `UnrecognisedPage` | QuickDNS answered with something unexpected, e.g. a logged-out page | `UnexpectedValueException` |
+| `StaleRecord` | The record was replaced or removed earlier in the same edit | `QuickDnsException` |
+| `UnrecognisedPage` | QuickDNS answered with something unexpected, e.g. a logged-out page | `QuickDnsException` |
+
+Using the library wrongly, such as starting an edit inside another, throws `LogicException`
+instead: that is a bug to fix, not something QuickDNS said.
+
+`CommandFailed` also says what failed: `function()` is the command, `status()` QuickDNS' status,
+`statusText()` its message and `fields()` the rest of its answer.
 
 ```php
 use QuickDns\Exceptions\CommandFailed;
@@ -231,7 +238,7 @@ use QuickDns\Exceptions\CommandFailed;
 try {
     (new Zone($quickDns, 'example.dk'))->create();
 } catch (CommandFailed $e) {
-    echo 'QuickDNS said: ', $e->getMessage(), PHP_EOL;
+    echo $e->function(), ' failed: ', $e->statusText(), PHP_EOL;
 }
 ```
 

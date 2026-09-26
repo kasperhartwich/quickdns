@@ -51,7 +51,7 @@ final class GroupTest extends TestCase
     {
         $group = new Group($this->quickDns(), 'sjaskende-rabarber');
 
-        $this->expectException(\BadFunctionCallException::class);
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
         $this->expectExceptionMessage('Group is not created yet.');
         $group->delete();
     }

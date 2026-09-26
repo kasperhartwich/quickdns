@@ -63,7 +63,7 @@ final class TemplateRecordsTest extends TestCase
     {
         $template = new Template($this->quickDns(), 'test-template');
 
-        $this->expectException(\BadFunctionCallException::class);
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
         $this->expectExceptionMessage('Template is not created yet.');
         $template->getRecords();
     }
@@ -136,7 +136,7 @@ final class TemplateRecordsTest extends TestCase
     {
         $template = new Template($this->quickDns(), 'standard');
 
-        $this->expectException(\BadFunctionCallException::class);
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
         $template->rename('fancy');
     }
 }

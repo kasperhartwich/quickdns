@@ -49,7 +49,7 @@ final class ZoneTest extends TestCase
     {
         $zone = new Zone($this->quickDns(), 'flyvende-agurk-pingvin.dk');
 
-        $this->expectException(\BadFunctionCallException::class);
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
         $this->expectExceptionMessage('Zone is not created yet.');
         $zone->delete();
     }

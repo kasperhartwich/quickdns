@@ -11,6 +11,7 @@ use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use QuickDns\Exceptions\CommandFailed;
 use QuickDns\Exceptions\LoginFailed;
+use QuickDns\Exceptions\MissingId;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\UnrecognisedPage;
 use QuickDns\Internal\ZoneEditSession;
@@ -435,14 +436,14 @@ class QuickDns
     {
         $id = $template instanceof Template ? $template->id : $template;
 
-        return $id ?: throw new \BadFunctionCallException('Template is not created yet.');
+        return $id ?: throw new MissingId('Template is not created yet.');
     }
 
     private function zoneId(Zone|int|string $zone): int|string
     {
         $id = $zone instanceof Zone ? $zone->id : $zone;
 
-        return $id ?: throw new \BadFunctionCallException('Zone is not created yet.');
+        return $id ?: throw new MissingId('Zone is not created yet.');
     }
 
     /**
@@ -567,7 +568,18 @@ class QuickDns
         }
         if (trim($status->text()) !== 'OK') {
             $statustext = $xml->filterXPath('//response/statustext');
-            throw new CommandFailed($statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()));
+            $fields = [];
+            foreach ($xml->filterXPath('//response/*') as $field) {
+                if (! in_array($field->nodeName, ['status', 'statustext'], true)) {
+                    $fields[$field->nodeName] = trim((string) $field->textContent);
+                }
+            }
+            throw new CommandFailed(
+                $statustext->count() ? trim($statustext->text()) : 'QuickDNS answered '.trim($status->text()),
+                $function,
+                trim($status->text()),
+                $fields,
+            );
         }
 
         return $xml;

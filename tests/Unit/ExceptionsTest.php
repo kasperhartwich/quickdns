@@ -6,28 +6,55 @@ namespace QuickDns\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use QuickDns\Exceptions\CommandFailed;
+use QuickDns\Exceptions\InvalidRecord;
 use QuickDns\Exceptions\LoginFailed;
+use QuickDns\Exceptions\MissingId;
 use QuickDns\Exceptions\NotFound;
 use QuickDns\Exceptions\QuickDnsException;
+use QuickDns\Exceptions\RecordLocked;
+use QuickDns\Exceptions\RecordRejected;
+use QuickDns\Exceptions\StaleRecord;
 use QuickDns\Exceptions\UnrecognisedPage;
 
 final class ExceptionsTest extends TestCase
 {
-    /**
-     * Callers written against 2.2 catch the SPL classes, so each new exception must still be one.
-     */
-    public function test_exceptions_keep_their_spl_parents()
+    public static function exceptions(): array
     {
-        $this->assertInstanceOf(\InvalidArgumentException::class, new LoginFailed());
-        $this->assertInstanceOf(\InvalidArgumentException::class, new CommandFailed());
-        $this->assertInstanceOf(\UnexpectedValueException::class, new UnrecognisedPage());
-        $this->assertInstanceOf(\UnexpectedValueException::class, new NotFound());
+        return [
+            [LoginFailed::class], [CommandFailed::class], [UnrecognisedPage::class], [NotFound::class],
+            [MissingId::class], [InvalidRecord::class], [RecordLocked::class], [StaleRecord::class],
+            [RecordRejected::class],
+        ];
     }
 
-    public function test_exceptions_share_one_interface()
+    #[DataProvider('exceptions')]
+    public function test_every_exception_extends_the_one_parent_and_no_spl_class(string $class)
     {
-        foreach ([LoginFailed::class, CommandFailed::class, UnrecognisedPage::class, NotFound::class] as $class) {
-            $this->assertInstanceOf(QuickDnsException::class, new $class());
+        $exception = $class === RecordRejected::class ? new RecordRejected('no') : new $class();
+
+        $this->assertInstanceOf(QuickDnsException::class, $exception);
+        $this->assertNotInstanceOf(\RuntimeException::class, $exception);
+        $this->assertNotInstanceOf(\LogicException::class, $exception);
+    }
+
+    public function test_the_parent_cannot_be_thrown_on_its_own()
+    {
+        $this->assertTrue((new \ReflectionClass(QuickDnsException::class))->isAbstract());
+    }
+
+    public function test_command_failed_carries_the_answer()
+    {
+        $quickDns = $this->quickDns(['<response><status>ERROR</status><statustext>Zonen eksisterer allerede</statustext><zoneid>42</zoneid></response>']);
+
+        try {
+            $quickDns->command('addzone', ['zone' => 'example.dk']);
+            $this->fail('No exception');
+        } catch (CommandFailed $e) {
+            $this->assertSame('Zonen eksisterer allerede', $e->getMessage());
+            $this->assertSame('Zonen eksisterer allerede', $e->statusText());
+            $this->assertSame('addzone', $e->function());
+            $this->assertSame('ERROR', $e->status());
+            $this->assertSame(['zoneid' => '42'], $e->fields());
         }
     }
 

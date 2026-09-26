@@ -19,21 +19,14 @@ class RecordRejected extends CommandFailed
      */
     public function __construct(
         string $message,
-        private readonly string $status = '',
+        string $status = '',
         private readonly array $errors = [],
         private readonly array $rows = [],
         private readonly array $records = [],
         private readonly ?Record $attempted = null,
     ) {
-        parent::__construct($message);
-    }
-
-    /**
-     * QuickDNS' status line, e.g. "Status: 1 fejl i zonen".
-     */
-    public function status(): string
-    {
-        return $this->status;
+        // Here status() is QuickDNS' status line, e.g. "Status: 1 fejl i zonen".
+        parent::__construct($message, 'submitzonechange', $status);
     }
 
     /**
