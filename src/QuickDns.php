@@ -185,7 +185,7 @@ class QuickDns
      *
      * @throws UnrecognisedPage when the page has no record table
      */
-    public function getRecords(Zone|int|string $zone): array
+    public function getRecords(Zone|int $zone): array
     {
         $id = $this->zoneId($zone);
 
@@ -206,7 +206,7 @@ class QuickDns
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function editZone(Zone|int|string $zone, callable $changes): mixed
+    public function editZone(Zone|int $zone, callable $changes): mixed
     {
         return $this->editRecords('zone', 'editzone', $this->zoneId($zone), $changes);
     }
@@ -218,7 +218,7 @@ class QuickDns
      * @param  callable(RecordSet): mixed  $changes
      * @return mixed Whatever the closure returned
      */
-    public function editTemplate(Template|int|string $template, callable $changes): mixed
+    public function editTemplate(Template|int $template, callable $changes): mixed
     {
         return $this->editRecords('template', 'edittemplate', $this->templateId($template), $changes);
     }
@@ -228,7 +228,7 @@ class QuickDns
      *
      * @return Record[]
      */
-    public function getTemplateRecords(Template|int|string $template): array
+    public function getTemplateRecords(Template|int $template): array
     {
         $id = $this->templateId($template);
 
@@ -238,11 +238,9 @@ class QuickDns
     /**
      * @param  string  $what  'zone' or 'template'
      * @param  string  $page  The page that opens the session
-     * @param  int|string  $id
      * @param  callable(RecordSet): mixed  $changes
-     * @return mixed
      */
-    private function editRecords($what, $page, $id, callable $changes)
+    private function editRecords(string $what, string $page, int $id, callable $changes): mixed
     {
         if ($this->editing) {
             throw new \LogicException('A zone or template is already being edited: QuickDNS keeps one pending table per session.');
@@ -369,13 +367,13 @@ class QuickDns
      * QuickDNS replaces the whole list every time, so this is the honest shape of the endpoint:
      * Template::addZone() and removeZone() are built on it.
      *
-     * @param  array<Template|string|int>  $templates  Templates, their names, or their ids
+     * @param  array<Template|string|int>  $templates  Templates, their names (strings), or their ids (ints)
      *
      * @throws NotFound when the account has no template of that name
      */
-    public function setTemplates(Zone|int|string $zone, array $templates): void
+    public function setTemplates(Zone|int $zone, array $templates): void
     {
-        $ids = $this->idsOf($templates, fn (string $name) => $this->getTemplate($name)->id);
+        $ids = $this->idsOf($templates, fn (string $name) => $this->getTemplate($name)->requireId());
         $this->command('updatetemplates', [
             'zone' => $this->zoneId($zone),
             'template' => $ids,
@@ -385,13 +383,13 @@ class QuickDns
     /**
      * Set the groups a zone is in to exactly these, in one request. An empty list removes them all.
      *
-     * @param  array<Group|string|int>  $groups  Groups, their names, or their ids
+     * @param  array<Group|string|int>  $groups  Groups, their names (strings), or their ids (ints)
      *
      * @throws NotFound when the account has no group of that name
      */
-    public function setGroups(Zone|int|string $zone, array $groups): void
+    public function setGroups(Zone|int $zone, array $groups): void
     {
-        $ids = $this->idsOf($groups, fn (string $name) => $this->getGroup($name)->id);
+        $ids = $this->idsOf($groups, fn (string $name) => $this->getGroup($name)->requireId());
         $this->command('updategroups', [
             'zone' => $this->zoneId($zone),
             'group' => $ids,
@@ -399,29 +397,39 @@ class QuickDns
     }
 
     /**
+     * An int is an id and a string a name, always: a template called "2024" is not template 2024.
+     *
      * @param  array<BaseModel|string|int>  $items
-     * @param  callable(string): (int|string|null)  $lookup
-     * @return array<int|string>
+     * @param  callable(string): int  $lookup
+     * @return list<int>
      */
     private function idsOf(array $items, callable $lookup): array
     {
-        return array_values(array_map(function ($item) use ($lookup) {
-            if ($item instanceof BaseModel) {
-                return $item->requireId();
-            }
-
-            return is_numeric($item) ? $item : $lookup((string) $item);
+        return array_values(array_map(fn (BaseModel|string|int $item) => match (true) {
+            $item instanceof BaseModel => $item->requireId(),
+            is_int($item) => $item,
+            default => $lookup($item),
         }, $items));
     }
 
-    private function templateId(Template|int|string $template): int|string
+    private function templateId(Template|int $template): int
     {
-        return $template instanceof Template ? $template->requireId() : ($template ?: throw new MissingId('Template is not created yet.'));
+        return $template instanceof Template ? $template->requireId() : self::positive($template, 'template');
     }
 
-    private function zoneId(Zone|int|string $zone): int|string
+    private function zoneId(Zone|int $zone): int
     {
-        return $zone instanceof Zone ? $zone->requireId() : ($zone ?: throw new MissingId('Zone is not created yet.'));
+        return $zone instanceof Zone ? $zone->requireId() : self::positive($zone, 'zone');
+    }
+
+    /**
+     * QuickDNS' ids start at 1, so 0 or less is a mistake that would otherwise reach QuickDNS.
+     *
+     * @throws MissingId
+     */
+    private static function positive(int $id, string $what): int
+    {
+        return $id > 0 ? $id : throw new MissingId('Not a '.$what.' id: '.$id);
     }
 
     /**

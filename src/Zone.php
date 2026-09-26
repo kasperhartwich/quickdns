@@ -39,11 +39,11 @@ final readonly class Zone extends BaseModel
      *
      * @return self The zone with its id, ready to be edited or attached
      */
-    public function create(bool $get_data = false): self
+    public function create(bool $getData = false): self
     {
         $response = $this->quickdns->command('addzone', [
             'zone' => $this->domain,
-            'getdata' => $get_data ? 1 : 0,
+            'getdata' => $getData ? 1 : 0,
         ], QuickDns::METHOD_GET);
 
         $zoneid = $response->filterXPath('//response/zoneid');
