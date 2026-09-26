@@ -59,7 +59,7 @@ final class QuickDnsTest extends TestCase
 
         $this->assertSame('zones', $this->lastRequestUri());
         $this->assertCount(1, $zones);
-        $this->assertSame('17287', $zones[0]->id);
+        $this->assertSame(17287, $zones[0]->id);
         $this->assertSame('flyvende-agurk-pingvin.dk', $zones[0]->domain);
         $this->assertSame(['test-template'], $zones[0]->templates);
         $this->assertSame(['test-group'], $zones[0]->groups);

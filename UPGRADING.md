@@ -43,3 +43,12 @@ $zone->updated?->format('Y-m-d H:i:s');
 
 `Group::$updated` held the text "Ret", the label of the groups page's rename link, and is now always
 null: QuickDNS shows no time for a group.
+
+### `Zone::$id` is an int
+
+`Zone::$id` was a string ("17287"), from `getZones()` and from `create()` alike, while every other
+id was an int. It is now an int too. This one fails silently: a strict comparison such as
+`$zone->id === '17287'`, or `in_array($zone->id, $ids, true)` against a list of strings, stops
+matching without an error. So does a `string` parameter or property the id is passed to under
+`strict_types`, though that one at least throws a TypeError. Search your code for places that
+compare or store zone ids.

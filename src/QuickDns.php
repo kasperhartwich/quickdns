@@ -157,7 +157,7 @@ class QuickDns
             // and groups(rowIndex, usearray, editarray).
             $zone->templateIds = $this->idsInCall($node, 'templates', 1);
             $zone->groupIds = $this->idsInCall($node, 'groups', 2);
-            $zone->id = $zone_data[0];
+            $zone->id = (int) $zone_data[0];
             $zone->domain = $zone_data[2];
             $zone->templates = $zone_data[3] == 'Ingen' ? [] : explode(', ', $zone_data[3]);
             $zone->groups = $zone_data[4] == 'Ingen' ? [] : explode(', ', $zone_data[4]);
