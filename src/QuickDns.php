@@ -161,7 +161,7 @@ class QuickDns
             $zone->domain = $zone_data[2];
             $zone->templates = $zone_data[3] == 'Ingen' ? [] : explode(', ', $zone_data[3]);
             $zone->groups = $zone_data[4] == 'Ingen' ? [] : explode(', ', $zone_data[4]);
-            $zone->updated = $zone_data[5];
+            $zone->updated = BaseModel::parseUpdated($zone_data[5]);
             $zones[] = $zone;
         }
 
@@ -462,7 +462,7 @@ class QuickDns
                 $template->name = $name;
                 $template->zones = (int) $this->cell($tr, 2, 'templates');
                 $template->groups = $this->names($this->cell($tr, 3, 'templates'));
-                $template->updated = $this->cell($tr, 4, 'templates');
+                $template->updated = BaseModel::parseUpdated($this->cell($tr, 4, 'templates'));
 
                 return $template;
             });
@@ -497,7 +497,7 @@ class QuickDns
                 $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
                 $group->name = $name;
                 $group->members = $this->names($this->cell($tr, 2, 'groups'));
-                $group->updated = $this->cell($tr, 3, 'groups');
+                // The groups page shows no time: its third cell is the "Ret" link.
 
                 return $group;
             });

@@ -28,3 +28,18 @@ Calling something that needs an id on a zone, template or group that has none (`
 
 `CommandFailed` now says what failed: `function()`, `status()`, `statusText()` and `fields()`. On
 `RecordRejected`, `status()` is still QuickDNS' status line, e.g. "Status: 1 fejl i zonen".
+
+### `$updated` is a DateTimeImmutable
+
+`Zone::$updated` and `Template::$updated` were the text the list page shows, "2026-09-22 18:21:28".
+They are now a `DateTimeImmutable` in Europe/Copenhagen, the time zone QuickDNS shows its times in,
+or null when the page shows none. In the hour the clocks go back, which happens twice, the page does
+not say which of the two it was, so the time can be an hour off. Format it yourself where you used
+the string:
+
+```php
+$zone->updated?->format('Y-m-d H:i:s');
+```
+
+`Group::$updated` held the text "Ret", the label of the groups page's rename link, and is now always
+null: QuickDNS shows no time for a group.

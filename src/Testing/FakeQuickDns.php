@@ -823,7 +823,7 @@ final class FakeQuickDns
 
     private function now(): string
     {
-        return date('Y-m-d H:i:s');
+        return (new \DateTimeImmutable('now', new \DateTimeZone(\QuickDns\BaseModel::TIMEZONE)))->format('Y-m-d H:i:s');
     }
 
     private function e(string $text): string
