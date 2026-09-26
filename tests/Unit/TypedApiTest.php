@@ -68,7 +68,7 @@ final class TypedApiTest extends BaseTestCase
      * and not taken off the list.
      */
     private const UNTYPED_UNTIL_THE_MODELS_ARE_REWRITTEN = [
-        BaseModel::class => ['$id', '$updated'],
+        BaseModel::class => ['$id'],
         Zone::class => ['$domain', '$templates', '$groups'],
         Template::class => ['$name', '$zones', '$groups'],
         Group::class => ['$name', '$members'],

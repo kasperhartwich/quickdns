@@ -63,7 +63,27 @@ final class QuickDnsTest extends TestCase
         $this->assertSame('flyvende-agurk-pingvin.dk', $zones[0]->domain);
         $this->assertSame(['test-template'], $zones[0]->templates);
         $this->assertSame(['test-group'], $zones[0]->groups);
-        $this->assertSame('2026-09-22 18:21:28', $zones[0]->updated);
+        $this->assertEquals(new \DateTimeImmutable('2026-09-22 18:21:28', new \DateTimeZone('Europe/Copenhagen')), $zones[0]->updated);
+        $this->assertSame('Europe/Copenhagen', $zones[0]->updated->getTimezone()->getName());
+    }
+
+    public function test_templates_carry_their_time_and_groups_none()
+    {
+        $template = $this->quickDns(['templates'])->getTemplates()[0];
+        $this->assertSame('2026-09-22 18:10:09', $template->updated->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-09-22T16:10:09+00:00', $template->updated->setTimezone(new \DateTimeZone('UTC'))->format('c'));
+
+        // Its third cell is the "Ret" link, not a time.
+        $this->assertNull($this->quickDns(['groups'])->getGroups()[1]->updated);
+    }
+
+    public function test_updated_that_is_no_time_means_the_page_changed()
+    {
+        $this->assertNull(\QuickDns\BaseModel::parseUpdated('-'));
+        $this->assertNull(\QuickDns\BaseModel::parseUpdated(''));
+
+        $this->expectException(\QuickDns\Exceptions\UnrecognisedPage::class);
+        \QuickDns\BaseModel::parseUpdated("2026-09-22\0 18:21:28");
     }
 
     /**
