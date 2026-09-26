@@ -449,7 +449,7 @@ class QuickDns
                     $this,
                     $this->cell($tr, 1, 'templates'),
                     $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\?id=(\d+)(?:&|$)/', 'templates'),
-                    zones: (int) $this->cell($tr, 2, 'templates'),
+                    zoneCount: (int) $this->cell($tr, 2, 'templates'),
                     groups: $this->names($this->cell($tr, 3, 'templates')),
                     updated: BaseModel::parseUpdated($this->cell($tr, 4, 'templates')),
                 );

@@ -59,7 +59,7 @@ final class FakeQuickDnsTest extends TestCase
         $this->assertSame(['standard'], $fake->templatesOf('flyvende-agurk-pingvin.dk'));
         $this->assertSame(['standard'], $quickDns->getZone('flyvende-agurk-pingvin.dk')->templates);
         $this->assertSame(['kunder'], $quickDns->getZone('flyvende-agurk-pingvin.dk')->groups);
-        $this->assertSame(1, $quickDns->getTemplate('standard')->zones);
+        $this->assertSame(1, $quickDns->getTemplate('standard')->zoneCount);
 
         $quickDns->getTemplate('standard')->removeZone($zone);
         $quickDns->getGroup('kunder')->removeZone($zone);

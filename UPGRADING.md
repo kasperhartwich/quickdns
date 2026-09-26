@@ -82,3 +82,16 @@ properties can no longer be assigned, and they cannot be extended.
 - **Removed properties throw.** Reading a property that 3.0 removed throws a `LogicException` naming
   the replacement, for example `Group::$updated`, rather than giving null and a warning. So does any
   other unknown property.
+
+### `Template::$zones` is `$zoneCount`
+
+`Template::$zones` was the number of zones using the template, despite its name. It is now
+`$zoneCount`, and reading `$zones` throws a `LogicException` that says so. New methods return
+the related objects themselves, each read from QuickDNS when called:
+
+- `Template::zones()`: the zones using the template
+- `Template::groups()`: the groups it is shared with
+- `Zone::templates()`: the templates the zone uses
+- `Zone::groups()`: the groups the zone is in
+
+The properties `Zone::$templates`, `Zone::$groups` and `Template::$groups` still hold the names.
