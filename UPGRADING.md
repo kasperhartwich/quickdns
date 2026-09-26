@@ -2,6 +2,26 @@
 
 ## From 2.x to 3.0
 
+3.0 needs PHP 8.3, as 2.7 does. Much of what changed fails loudly: a type error, a removed
+property that names its replacement, a method that no longer exists. These can change what your
+code does without an error, so look for them first:
+
+1. **`catch (\InvalidArgumentException)` and `catch (\UnexpectedValueException)`** around this
+   library no longer catch its exceptions. See [Exceptions](#exceptions).
+2. **`Zone::$id` is an int.** A strict comparison with the old string stops matching. See
+   [`Zone::$id` is an int](#zoneid-is-an-int).
+3. **The constructor no longer logs in**, so wrong credentials throw from the first request
+   instead of from `new`. See [Logging in](#logging-in).
+4. **Models no longer change in place.** `$zone->create()`, `$template->rename()` and
+   `$template->addZone($zone)` leave the object they were called on as it was, and return the new
+   state. Code that ignores the return value keeps using the old one. See
+   [Models are final and immutable](#models-are-final-and-immutable).
+5. **`getGroups()` is indexed from 0**, so `getGroups()[1]` is now the second group. See
+   [Groups](#groups).
+
+New in 3.0, besides the changes below: the client logs in again by itself when QuickDNS has ended
+its session, and resends the request once.
+
 ### Exceptions
 
 `QuickDns\Exceptions\QuickDnsException` is now an abstract class instead of an interface, and it
@@ -75,9 +95,9 @@ properties can no longer be assigned, and they cannot be extended.
 - **`delete()` returns nothing** instead of `true`. It throws when it fails, as before.
 - **`rename()` returns the renamed object**, and the one you called it on keeps the old name.
 - **`Template::addZone()`, `removeZone()` and their `Group` counterparts return the `Zone`** as
-  QuickDNS shows it afterwards, where 2.x returned the template or group. They always read the zone's current list from
-  QuickDNS first, and do nothing when there is nothing to change. 2.x trusted the list the `Zone`
-  object was read with.
+  QuickDNS shows it afterwards, where 2.x returned the template or group. They always read the
+  zone's current list from QuickDNS first, and do nothing when there is nothing to change. 2.x
+  trusted the list the `Zone` object was read with.
 - **`requireId()`** returns the id or throws `MissingId`.
 - **Removed properties throw.** Reading a property that 3.0 removed throws a `LogicException` naming
   the replacement, for example `Group::$updated`, rather than giving null and a warning. So does any
