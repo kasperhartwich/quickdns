@@ -25,11 +25,11 @@ final class CommandTest extends TestCase
 
     public function test_html_page_throws_unrecognised_page()
     {
-        // E.g. the login page after the session expired. 2.2 only looked for "ERROR", so it took
+        // E.g. the login page, still, after logging in again. 2.2 only looked for "ERROR", so it took
         // this for success.
         $this->expectException(UnrecognisedPage::class);
         $this->expectExceptionMessage('Unexpected response to delzone');
-        $this->quickDns(['login-failed'])->command('delzone', ['id' => 1]);
+        $this->quickDns(['login-failed', 'login-ok', 'login-failed'])->command('delzone', ['id' => 1]);
     }
 
     public function test_html_mentioning_error_throws_unrecognised_page()

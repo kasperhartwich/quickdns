@@ -98,7 +98,7 @@ final class ExceptionsTest extends TestCase
     {
         $this->expectException(UnrecognisedPage::class);
         $this->expectExceptionMessage('Unexpected page at '.$page.': not logged in');
-        $this->quickDns(['login-failed'])->$method();
+        $this->quickDns(['login-failed', 'login-ok', 'login-failed'])->$method();
     }
 
     #[DataProvider('listTables')]

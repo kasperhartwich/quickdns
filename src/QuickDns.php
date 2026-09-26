@@ -43,6 +43,11 @@ class QuickDns
     private bool $editing = false;
 
     /**
+     * True while an edit session holds a pending table on QuickDNS' side.
+     */
+    private bool $sessionOpen = false;
+
+    /**
      * The class lazy() is constructing, or null.
      */
     private static ?string $constructLazily = null;
@@ -264,6 +269,7 @@ class QuickDns
         }
 
         $records = new RecordSet($session);
+        $this->sessionOpen = true;
         try {
             $result = $changes($records);
             $session->save();
@@ -272,6 +278,7 @@ class QuickDns
         } finally {
             $records->close();
             $session->close();
+            $this->sessionOpen = false;
             $this->editing = false;
         }
     }
@@ -619,13 +626,6 @@ class QuickDns
     }
 
     /**
-     * Send a request and return the raw response body.
-     *
-     * @param  string  $function  Path relative to https://www.quickdns.dk/, or an absolute URL
-     * @param  array  $options
-     * @param  string  $method
-     */
-    /**
      * Build a query string the way QuickDNS' own pages do.
      *
      * A list is sent as the same parameter repeated: template=1&template=2. PHP's own
@@ -652,11 +652,54 @@ class QuickDns
         return implode('&', $pairs);
     }
 
+    /**
+     * Send a request and return the raw response body.
+     *
+     * QuickDNS ends a session after a while without a word, and then answers every request with
+     * its login page. Such a request did nothing, so it is sent once more after logging in again.
+     * Not in the middle of an edit, though: the pending table went with the session.
+     *
+     * @param  string  $function  Path relative to https://www.quickdns.dk/, or an absolute URL
+     *
+     * @throws UnrecognisedPage when QuickDNS logged the client out in the middle of an edit
+     */
     private function send(string $function, array $options = [], string $method = self::METHOD_GET): string
     {
-        if (! $this->loggedIn && ! $this->loggingIn && ltrim($function, '/') !== 'login') {
+        // By the path it resolves to, so an absolute URL to the login page counts as well.
+        $isLogin = UriResolver::resolve(new Uri($this->base_uri), new Uri($function))->getPath() === '/login';
+        if (! $this->loggedIn && ! $this->loggingIn && ! $isLogin) {
             $this->logInOrFail();
         }
+
+        $body = $this->transmit($function, $options, $method);
+        if ($this->loggingIn || $isLogin || ! self::isLoginPage($body)) {
+            return $body;
+        }
+        if ($this->sessionOpen) {
+            throw new UnrecognisedPage('QuickDNS logged the client out in the middle of an edit at '.$function.', so nothing was saved.');
+        }
+
+        $this->loggedIn = false;
+        $this->cookieJar = new CookieJar();
+        $this->logInOrFail();
+
+        return $this->transmit($function, $options, $method);
+    }
+
+    /**
+     * QuickDNS' login page, recognised by its login form. Anything else, an error page or XML
+     * that does not parse, is left for the caller to judge, so it is never mistaken for a
+     * logged-out answer and sent twice.
+     */
+    private static function isLoginPage(string $body): bool
+    {
+        return ! str_contains($body, 'Log ud')
+            && preg_match('~<form\s[^>]*action="/login"~i', $body) === 1
+            && str_contains($body, 'name="password"');
+    }
+
+    private function transmit(string $function, array $options, string $method): string
+    {
         if (empty($options)) {
             $options = [];
         } elseif ($method == self::METHOD_POST) {
