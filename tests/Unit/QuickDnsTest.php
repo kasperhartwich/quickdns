@@ -39,18 +39,15 @@ final class QuickDnsTest extends TestCase
 
     public function test_login_failed()
     {
-        $quickDns = $this->quickDns(['login-failed']);
-
-        $this->assertFalse($quickDns->login());
+        $this->expectException(\QuickDns\Exceptions\LoginFailed::class);
+        $this->quickDnsWithLogin('login-failed');
     }
 
     public function test_login_unknown_response()
     {
-        $quickDns = $this->quickDns(['<html><body>Vedligeholdelse</body></html>']);
-
         $this->expectException(\QuickDns\Exceptions\UnrecognisedPage::class);
         $this->expectExceptionMessage('Unknown response at login');
-        $quickDns->login();
+        $this->quickDnsWithLogin('<html><body>Vedligeholdelse</body></html>');
     }
 
     public function test_get_zones()

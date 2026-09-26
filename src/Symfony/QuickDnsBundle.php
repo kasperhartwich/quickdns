@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 /**
- * Registers QuickDns as a lazy, autowirable service. Configure it in config/packages/quickdns.yaml:
+ * Registers QuickDns as an autowirable service. It logs in on first use. Configure it in config/packages/quickdns.yaml:
  *
  *     quickdns:
  *         email: '%env(QUICKDNS_EMAIL)%'
@@ -38,7 +38,6 @@ class QuickDnsBundle extends AbstractBundle
     {
         $container->services()
             ->set(QuickDns::class)
-                ->factory([QuickDns::class, 'lazy'])
                 ->args([$config['email'], $config['password'], $config['client'] ? service($config['client']) : null])
             ->alias('quickdns', QuickDns::class);
     }

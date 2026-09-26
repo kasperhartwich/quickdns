@@ -21,7 +21,7 @@ class QuickDnsServiceProvider extends ServiceProvider
         $this->app->singleton(QuickDns::class, function (Application $app) {
             $config = $app['config']['quickdns'];
 
-            return QuickDns::lazy(
+            return new QuickDns(
                 (string) $config['email'],
                 (string) $config['password'],
                 $config['client'] ? $app->make($config['client']) : null,

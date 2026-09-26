@@ -24,20 +24,16 @@ composer require kasperhartwich/quickdns
 
 ## Usage
 
-Creating the client logs in right away. Wrong credentials throw `QuickDns\Exceptions\LoginFailed`.
+The client logs in on its first request, not when it is created, so it can be built long before it
+is used, for example in a service container. Wrong credentials throw
+`QuickDns\Exceptions\LoginFailed` from that first request. Call `login()` to check them right away:
 
 ```php
 use QuickDns\QuickDns;
 
 $quickDns = new QuickDns('my@email.example', 'password');
-```
-
-To log in on the first request instead, for example when the client is built in a service
-container long before it is used, use `QuickDns::lazy()`. It logs in once per instance, and wrong
-credentials throw `LoginFailed` from that first request:
-
-```php
-$quickDns = QuickDns::lazy('my@email.example', 'password');
+$quickDns->login();              // optional: fails here rather than later
+$quickDns->isLoggedIn();         // true
 ```
 
 QuickDNS ends a login session after a while. When a request is answered with the login page, the

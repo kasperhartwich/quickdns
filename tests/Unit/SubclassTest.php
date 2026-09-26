@@ -34,6 +34,8 @@ final class SubclassTest extends TestCase
         (new Zone($quickDns, 'flyvende-agurk-pingvin.dk'))->create();
         $quickDns->getZone('flyvende-agurk-pingvin.dk')->delete();
 
-        $this->assertSame(['login', 'addzone', 'zones', 'delzone'], $quickDns->calls);
+        // The automatic login lives below request(), so a subclass that answers every request
+        // itself is never asked to log in.
+        $this->assertSame(['addzone', 'zones', 'delzone'], $quickDns->calls);
     }
 }
