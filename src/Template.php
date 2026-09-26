@@ -25,6 +25,11 @@ class Template extends BaseModel
     public $groups;
 
     /**
+     * When QuickDNS last changed it, or null when the list does not say.
+     */
+    public ?\DateTimeImmutable $updated = null;
+
+    /**
      * Template constructor.
      */
     public function __construct(QuickDns $quickdns, ?string $name = null)

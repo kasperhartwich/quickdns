@@ -543,7 +543,11 @@ final class FakeQuickDns
                 ."</tr>\n";
         }
 
-        return $this->page('Mine grupper', '<table class="listtable" id="group_table"><tr>'
+        // QuickDNS names the members in an inline script, not in the table.
+        $members = implode(', ', array_map(fn (int $id) => $id.': []', array_keys($this->groups)));
+
+        return $this->page('Mine grupper', '<script type="text/javascript">function init_groupmembers () { groupmembers = {'.$members.'}; }</script>'
+            .'<table class="listtable" id="group_table"><tr>'
             .'<th class="listheader">Gruppe</th><th class="listheader">Medlemmer</th><th class="listheader">Ret</th><th class="listheader">Slet</th>'
             ."</tr>\n".$rows.'</table>');
     }

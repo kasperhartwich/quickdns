@@ -67,14 +67,13 @@ final class QuickDnsTest extends TestCase
         $this->assertSame('Europe/Copenhagen', $zones[0]->updated->getTimezone()->getName());
     }
 
-    public function test_templates_carry_their_time_and_groups_none()
+    public function test_templates_carry_their_time_and_groups_have_none()
     {
         $template = $this->quickDns(['templates'])->getTemplates()[0];
         $this->assertSame('2026-09-22 18:10:09', $template->updated->format('Y-m-d H:i:s'));
         $this->assertSame('2026-09-22T16:10:09+00:00', $template->updated->setTimezone(new \DateTimeZone('UTC'))->format('c'));
 
-        // Its third cell is the "Ret" link, not a time.
-        $this->assertNull($this->quickDns(['groups'])->getGroups()[1]->updated);
+        $this->assertFalse(property_exists(\QuickDns\Group::class, 'updated'));
     }
 
     public function test_updated_that_is_no_time_means_the_page_changed()
@@ -126,9 +125,57 @@ final class QuickDnsTest extends TestCase
         $this->assertSame([], $groups[0]->members);
     }
 
-    public function test_get_groups_keeps_its_2_2_keys()
+    public function test_get_groups_is_a_list()
     {
-        $this->assertSame([1], array_keys($this->quickDns(['groups'])->getGroups()));
+        $this->assertSame([0], array_keys($this->quickDns(['groups'])->getGroups()));
+    }
+
+    public function test_group_members_come_from_the_inline_script()
+    {
+        $page = str_replace(
+            'groupmembers = {738: []};',
+            "groupmembers = {738: [[12, 'Kasper &lt;k@example.dk&gt;', true], [13, ' &lt;new@example.dk&gt;', false], [14, 'Odd, [name]', true]], 739: []};",
+            $this->fixture('groups'),
+        );
+
+        $members = $this->quickDns([$page])->getGroups()[0]->members;
+
+        $this->assertEquals([
+            new \QuickDns\Member(12, 'Kasper', 'k@example.dk', true),
+            new \QuickDns\Member(13, '', 'new@example.dk', false),
+            new \QuickDns\Member(14, 'Odd, [name]', '', true),
+        ], $members);
+    }
+
+    public function test_group_member_strings_are_read_with_javascript_escapes()
+    {
+        $page = str_replace(
+            'groupmembers = {738: []};',
+            'groupmembers = {738: [[1, \'S\u00f8ren \x3cs@example.dk\x3e\', true], [2, "It\'s \"me\" &lt;m@example.dk&gt;", true], [3, \'O\\\'Brien &lt;o@example.dk&gt;\', true]]};',
+            $this->fixture('groups'),
+        );
+
+        $members = $this->quickDns([$page])->getGroups()[0]->members;
+
+        $this->assertSame(['Søren', 'It\'s "me"', 'O\'Brien'], array_map(fn ($member) => $member->name, $members));
+        $this->assertSame(['s@example.dk', 'm@example.dk', 'o@example.dk'], array_map(fn ($member) => $member->email, $members));
+    }
+
+    public function test_group_members_that_do_not_parse_mean_the_page_changed()
+    {
+        $page = str_replace('groupmembers = {738: []};', 'groupmembers = {738: [{id: 12}]};', $this->fixture('groups'));
+
+        $this->expectException(\QuickDns\Exceptions\UnrecognisedPage::class);
+        $this->quickDns([$page])->getGroups();
+    }
+
+    public function test_a_groups_page_without_members_means_the_page_changed()
+    {
+        $page = str_replace('groupmembers = {738: []};', '', $this->fixture('groups'));
+
+        $this->expectException(\QuickDns\Exceptions\UnrecognisedPage::class);
+        $this->expectExceptionMessage('No group members on the groups page');
+        $this->quickDns([$page])->getGroups();
     }
 
     public function test_get_group_by_name()
