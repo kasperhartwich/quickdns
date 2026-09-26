@@ -29,10 +29,12 @@ final class FakeQuickDnsTest extends TestCase
     {
         $fake = new FakeQuickDns('me@example.dk', 'pw');
 
-        $this->assertInstanceOf(QuickDns::class, new QuickDns('me@example.dk', 'pw', $fake->client()));
+        $right = new QuickDns('me@example.dk', 'pw', $fake->client());
+        $right->login();
+        $this->assertTrue($right->isLoggedIn());
 
         $this->expectException(LoginFailed::class);
-        new QuickDns('me@example.dk', 'wrong', $fake->client());
+        (new QuickDns('me@example.dk', 'wrong', $fake->client()))->login();
     }
 
     public function test_refuses_requests_without_a_session()
@@ -137,7 +139,7 @@ final class FakeQuickDnsTest extends TestCase
     public function test_lazy_login_and_request_log()
     {
         $fake = new FakeQuickDns();
-        $quickDns = QuickDns::lazy('test@example.dk', 'secret', new Client(['handler' => HandlerStack::create($fake)]));
+        $quickDns = new QuickDns('test@example.dk', 'secret', new Client(['handler' => HandlerStack::create($fake)]));
         $this->assertSame([], $fake->requests());
 
         $quickDns->getZones();

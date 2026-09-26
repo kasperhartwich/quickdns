@@ -48,17 +48,14 @@ class QuickDns
      */
     private bool $sessionOpen = false;
 
-    /**
-     * The class lazy() is constructing, or null.
-     */
-    private static ?string $constructLazily = null;
-
     const METHOD_POST = 'POST';
 
     const METHOD_GET = 'GET';
 
     /**
-     * QuickDns constructor.
+     * The client logs in on its first request, not here, so it can be built long before it is
+     * used, e.g. in a service container. Wrong credentials throw LoginFailed from that first
+     * request; call login() to find out right away.
      *
      * @param  ClientInterface|null  $client  Guzzle client to send requests with, e.g. one with your own
      *                                        middleware or a MockHandler. The session cookies are kept
@@ -66,61 +63,28 @@ class QuickDns
      */
     public function __construct(string $email, string $password, ?ClientInterface $client = null)
     {
-        $this->configure($email, $password, $client);
-        if (self::$constructLazily === static::class) {
-            self::$constructLazily = null;
-
-            return;
-        }
-        $this->logInOrFail();
-    }
-
-    /**
-     * A QuickDns that logs in on its first request instead of right away, once per instance.
-     * Useful where the object is built long before it is used, e.g. in a service container.
-     * Wrong credentials throw LoginFailed from that first request.
-     */
-    public static function lazy(string $email, string $password, ?ClientInterface $client = null): static
-    {
-        // Go through the constructor, so a subclass' own constructor still runs.
-        // Keyed by class, so another QuickDns built inside a subclass' constructor is not lazy, and
-        // restored afterwards, so a lazy() call inside one does not clear the outer call's flag.
-        $previous = self::$constructLazily;
-        self::$constructLazily = static::class;
-        try {
-            return new static($email, $password, $client);
-        } finally {
-            self::$constructLazily = $previous;
-        }
-    }
-
-    private function configure(string $email, string $password, ?ClientInterface $client): void
-    {
         $this->email = $email;
         $this->password = $password;
         $this->cookieJar = new CookieJar();
         $this->client = $client ?? new Client();
     }
 
-    private function logInOrFail(): void
+    /**
+     * @deprecated 3.0 The constructor no longer logs in, so this is the same as new QuickDns().
+     */
+    public static function lazy(string $email, string $password, ?ClientInterface $client = null): static
     {
-        $this->loggingIn = true;
-        try {
-            $loggedIn = $this->login();
-        } finally {
-            $this->loggingIn = false;
-        }
-        if (! $loggedIn) {
-            throw new LoginFailed('Login failed.');
-        }
-        $this->loggedIn = true;
+        return new static($email, $password, $client);
     }
 
     /**
-     * Login to QuickDns
+     * Log in now. The client does this by itself before its first request, and again when QuickDNS
+     * has ended the session, so this is only needed to check the credentials up front.
      *
+     * @throws LoginFailed when QuickDNS rejects the email or password
+     * @throws UnrecognisedPage when QuickDNS answers with something else
      */
-    public function login(): bool
+    public function login(): void
     {
         $response = $this->request('login', [
             'email' => $this->email,
@@ -129,11 +93,37 @@ class QuickDns
         if (str_contains($response, 'Log ud')) {
             $this->loggedIn = true;
 
-            return true;
-        } elseif (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
-            return false;
+            return;
+        }
+        $this->loggedIn = false;
+        if (str_contains($response, 'Beklager, email-adressen eller passwordet der er indtastet er forkert.')) {
+            throw new LoginFailed('Login failed.');
         }
         throw new UnrecognisedPage('Unknown response at login');
+    }
+
+    /**
+     * Whether the client holds a login session. QuickDNS may have ended it since without saying
+     * so; the next request then logs in again.
+     */
+    public function isLoggedIn(): bool
+    {
+        return $this->loggedIn;
+    }
+
+    /**
+     * Log in before a request. A subclass' login() may return without throwing or marking the
+     * client as logged in, as 2.x ones did, so getting this far counts as logged in.
+     */
+    private function ensureLoggedIn(): void
+    {
+        $this->loggingIn = true;
+        try {
+            $this->login();
+        } finally {
+            $this->loggingIn = false;
+        }
+        $this->loggedIn = true;
     }
 
     /**
@@ -647,7 +637,7 @@ class QuickDns
         // By the path it resolves to, so an absolute URL to the login page counts as well.
         $isLogin = UriResolver::resolve(new Uri($this->base_uri), new Uri($function))->getPath() === '/login';
         if (! $this->loggedIn && ! $this->loggingIn && ! $isLogin) {
-            $this->logInOrFail();
+            $this->ensureLoggedIn();
         }
 
         $body = $this->transmit($function, $options, $method);
@@ -660,7 +650,7 @@ class QuickDns
 
         $this->loggedIn = false;
         $this->cookieJar = new CookieJar();
-        $this->logInOrFail();
+        $this->ensureLoggedIn();
 
         return $this->transmit($function, $options, $method);
     }

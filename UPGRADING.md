@@ -95,3 +95,17 @@ the related objects themselves, each read from QuickDNS when called:
 - `Zone::groups()`: the groups the zone is in
 
 The properties `Zone::$templates`, `Zone::$groups` and `Template::$groups` still hold the names.
+
+### Logging in
+
+- **The constructor no longer logs in.** `new QuickDns($email, $password)` sends nothing, and the
+  client logs in before its first request. Wrong credentials therefore throw `LoginFailed` from
+  that first request, not from `new`. Call `login()` right after creating the client to keep the
+  old behaviour.
+- **`QuickDns::lazy()` is deprecated.** It is now the same as the constructor. It stays until a
+  later major version.
+- **`login()` returns nothing.** It throws `LoginFailed` for a wrong email or password, where it
+  used to return false. A subclass that overrides it has to change its signature to `: void`.
+- **`isLoggedIn()`** says whether the client holds a login session.
+- **A `QuickDns` subclass that overrides `request()`** and answers every request itself is no
+  longer asked to log in, since the automatic login happens below `request()`.

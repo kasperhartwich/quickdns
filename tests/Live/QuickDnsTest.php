@@ -12,6 +12,6 @@ final class QuickDnsTest extends TestCase
     {
         $this->expectException(\QuickDns\Exceptions\LoginFailed::class);
         $this->expectExceptionMessage('Login failed.');
-        new QuickDns('wrong-email', 'wrong-password');
+        (new QuickDns('wrong-email', 'wrong-password'))->login();
     }
 }

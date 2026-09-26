@@ -27,7 +27,7 @@ class QuickDns extends Facade
     public static function fake(): FakeQuickDns
     {
         $fake = new FakeQuickDns('test@example.dk', 'secret');
-        static::swap(\QuickDns\QuickDns::lazy('test@example.dk', 'secret', $fake->client()));
+        static::swap(new \QuickDns\QuickDns('test@example.dk', 'secret', $fake->client()));
 
         return $fake;
     }

@@ -40,7 +40,10 @@ class TestCase extends \PHPUnit\Framework\TestCase
         $stack = HandlerStack::create(new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
 
-        return new QuickDns('test@example.dk', 'secret', new Client(['handler' => $stack]));
+        $quickDns = new QuickDns('test@example.dk', 'secret', new Client(['handler' => $stack]));
+        $quickDns->login();
+
+        return $quickDns;
     }
 
     /**
