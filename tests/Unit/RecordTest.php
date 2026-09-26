@@ -107,7 +107,7 @@ final class RecordTest extends TestCase
 
     public function test_zone_without_id()
     {
-        $this->expectException(\BadFunctionCallException::class);
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
         (new Zone($this->quickDns(), 'flyvende-agurk-pingvin.dk'))->getRecords();
     }
 }

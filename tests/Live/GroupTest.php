@@ -16,7 +16,7 @@ final class GroupTest extends TestCase
 
     public function test_create_group_fail_already_exists()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Gruppen eksisterer allerede');
 
         (new Group($this->quickDns, 'quickdns-api-group'))->create();
@@ -24,7 +24,7 @@ final class GroupTest extends TestCase
 
     public function test_create_group_fail_illegal_templateName()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Gruppens navn er ugyldigt');
 
         (new Group($this->quickDns, '@@'))->create();
@@ -40,7 +40,7 @@ final class GroupTest extends TestCase
     {
         $this->quickDns->getGroup('quickdns-api-group')->delete();
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\QuickDns\Exceptions\NotFound::class);
         $this->expectExceptionMessage('Unknown group');
         $this->quickDns->getGroup('quickdns-api-group');
     }

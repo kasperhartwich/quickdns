@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace QuickDns;
 
 use QuickDns\Exceptions\InvalidRecord;
+use QuickDns\Exceptions\MissingId;
 
 /**
  * Class Zone
@@ -75,7 +76,7 @@ class Zone extends BaseModel
     public function getRecords(): array
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Zone is not created yet.');
+            throw new MissingId('Zone is not created yet.');
         }
 
         return $this->quickdns->getRecords($this);
@@ -90,7 +91,7 @@ class Zone extends BaseModel
     public function edit(callable $changes): mixed
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Zone is not created yet.');
+            throw new MissingId('Zone is not created yet.');
         }
 
         return $this->quickdns->editZone($this, $changes);
@@ -142,7 +143,7 @@ class Zone extends BaseModel
     public function delete(): bool
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Zone is not created yet.');
+            throw new MissingId('Zone is not created yet.');
         }
         $this->quickdns->command('delzone', [
             'id' => $this->id,

@@ -64,7 +64,7 @@ class ZoneTest extends TestCase
 
     public function test_create_already_exists()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Zonen eksisterer allerede');
 
         (new Zone($this->quickDns, $this->testDomain))->create();
@@ -72,7 +72,7 @@ class ZoneTest extends TestCase
 
     public function test_create_illegal_domain_name()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\QuickDns\Exceptions\CommandFailed::class);
         $this->expectExceptionMessage('Zonens navn er ugyldigt');
 
         (new Zone($this->quickDns, str_replace('.dk', '.invalid', $this->testDomain)))->create();
@@ -82,7 +82,7 @@ class ZoneTest extends TestCase
     {
         $this->quickDns->getZone('flyvende-agurk-pingvin.dk')->delete();
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\QuickDns\Exceptions\NotFound::class);
         $this->expectExceptionMessage('Unknown domain');
         $this->quickDns->getZone('flyvende-agurk-pingvin.dk');
     }

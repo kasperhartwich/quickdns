@@ -48,7 +48,7 @@ final class QuickDnsTest extends TestCase
     {
         $quickDns = $this->quickDns(['<html><body>Vedligeholdelse</body></html>']);
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\QuickDns\Exceptions\UnrecognisedPage::class);
         $this->expectExceptionMessage('Unknown response at login');
         $quickDns->login();
     }

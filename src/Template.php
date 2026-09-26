@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace QuickDns;
 
 use QuickDns\Exceptions\InvalidRecord;
+use QuickDns\Exceptions\MissingId;
 
 /**
  * Class Template
@@ -56,7 +57,7 @@ class Template extends BaseModel
     public function delete(): bool
     {
         if (! $this->id) {
-            throw new \BadFunctionCallException('Template is not created yet.');
+            throw new MissingId('Template is not created yet.');
         }
         $this->quickdns->command('deltemplate', [
             'id' => $this->id,
@@ -72,7 +73,7 @@ class Template extends BaseModel
     public function rename(string $name): static
     {
         $this->quickdns->command('renametemplate', [
-            'zone' => $this->id ?: throw new \BadFunctionCallException('Template is not created yet.'),
+            'zone' => $this->id ?: throw new MissingId('Template is not created yet.'),
             'name' => $name,
         ]);
         $this->name = $name;
