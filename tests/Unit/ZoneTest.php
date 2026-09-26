@@ -17,7 +17,7 @@ final class ZoneTest extends TestCase
 
         $this->assertInstanceOf(Zone::class, $zone);
         $this->assertSame('addzone?zone=flyvende-agurk-pingvin.dk&getdata=0', $this->lastRequestUri());
-        $this->assertSame('17286', $zone->id);
+        $this->assertSame(17286, $zone->id);
     }
 
     public function test_create_with_data()

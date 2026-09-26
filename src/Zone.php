@@ -59,10 +59,9 @@ class Zone extends BaseModel
             'getdata' => $get_data ? 1 : 0,
         ], QuickDns::METHOD_GET);
 
-        // A string, like the ids getZones() returns.
         $zoneid = $response->filterXPath('//response/zoneid');
         if ($zoneid->count()) {
-            $this->id = trim($zoneid->text());
+            $this->id = (int) trim($zoneid->text());
         }
 
         return $this;
