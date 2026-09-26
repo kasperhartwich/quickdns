@@ -157,18 +157,18 @@ class QuickDns
             if (! ctype_digit($zone_data[0]) || count($zone_data) !== 7) {
                 throw new UnrecognisedPage('Unexpected row on the zones page: '.implode(' | ', array_slice($zone_data, 0, 7)));
             }
-            //Generate zone
-            $zone = new Zone($this, $zone_data[2]);
             // The row carries the ids as well as the names: templates(rowIndex, new Array('17284'))
             // and groups(rowIndex, usearray, editarray).
-            $zone->templateIds = $this->idsInCall($node, 'templates', 1);
-            $zone->groupIds = $this->idsInCall($node, 'groups', 2);
-            $zone->id = (int) $zone_data[0];
-            $zone->domain = $zone_data[2];
-            $zone->templates = $zone_data[3] == 'Ingen' ? [] : explode(', ', $zone_data[3]);
-            $zone->groups = $zone_data[4] == 'Ingen' ? [] : explode(', ', $zone_data[4]);
-            $zone->updated = BaseModel::parseUpdated($zone_data[5]);
-            $zones[] = $zone;
+            $zones[] = new Zone(
+                $this,
+                $zone_data[2],
+                (int) $zone_data[0],
+                templates: $this->names($zone_data[3]),
+                groups: $this->names($zone_data[4]),
+                updated: BaseModel::parseUpdated($zone_data[5]),
+                templateIds: $this->idsInCall($node, 'templates', 1),
+                groupIds: $this->idsInCall($node, 'groups', 2),
+            );
         }
 
         return $zones;
@@ -390,7 +390,6 @@ class QuickDns
             'zone' => $this->zoneId($zone),
             'template' => $ids,
         ]);
-        $this->rememberOnZone($zone, 'templateIds', $ids);
     }
 
     /**
@@ -407,21 +406,6 @@ class QuickDns
             'zone' => $this->zoneId($zone),
             'group' => $ids,
         ]);
-        $this->rememberOnZone($zone, 'groupIds', $ids);
-    }
-
-    /**
-     * A Zone object carries the ids it was read with, and the next add or remove is built on them,
-     * so it has to learn what was just set. Otherwise adding two templates one after the other
-     * through the same object keeps only the second.
-     *
-     * @param  int[]|string[]  $ids
-     */
-    private function rememberOnZone(Zone|int|string $zone, string $property, array $ids): void
-    {
-        if ($zone instanceof Zone) {
-            $zone->$property = array_map('intval', $ids);
-        }
     }
 
     /**
@@ -433,7 +417,7 @@ class QuickDns
     {
         return array_values(array_map(function ($item) use ($lookup) {
             if ($item instanceof BaseModel) {
-                return $item->id;
+                return $item->requireId();
             }
 
             return is_numeric($item) ? $item : $lookup((string) $item);
@@ -442,16 +426,12 @@ class QuickDns
 
     private function templateId(Template|int|string $template): int|string
     {
-        $id = $template instanceof Template ? $template->id : $template;
-
-        return $id ?: throw new MissingId('Template is not created yet.');
+        return $template instanceof Template ? $template->requireId() : ($template ?: throw new MissingId('Template is not created yet.'));
     }
 
     private function zoneId(Zone|int|string $zone): int|string
     {
-        $id = $zone instanceof Zone ? $zone->id : $zone;
-
-        return $id ?: throw new MissingId('Zone is not created yet.');
+        return $zone instanceof Zone ? $zone->requireId() : ($zone ?: throw new MissingId('Zone is not created yet.'));
     }
 
     /**
@@ -464,15 +444,15 @@ class QuickDns
         return $this->listRows('templates', 'zone_table')
             ->each(function (Crawler $tr) {
                 $this->expectCells($tr, 6, 'templates');
-                $name = $this->cell($tr, 1, 'templates');
-                $template = new Template($this, $name);
-                $template->id = $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\?id=(\d+)(?:&|$)/', 'templates');
-                $template->name = $name;
-                $template->zones = (int) $this->cell($tr, 2, 'templates');
-                $template->groups = $this->names($this->cell($tr, 3, 'templates'));
-                $template->updated = BaseModel::parseUpdated($this->cell($tr, 4, 'templates'));
 
-                return $template;
+                return new Template(
+                    $this,
+                    $this->cell($tr, 1, 'templates'),
+                    $this->idIn($this->attribute($tr, '//td[1]/a', 'href', 'templates'), '/\?id=(\d+)(?:&|$)/', 'templates'),
+                    zones: (int) $this->cell($tr, 2, 'templates'),
+                    groups: $this->names($this->cell($tr, 3, 'templates')),
+                    updated: BaseModel::parseUpdated($this->cell($tr, 4, 'templates')),
+                );
             });
     }
 
@@ -506,13 +486,9 @@ class QuickDns
 
         return $rows->each(function (Crawler $tr) use ($members) {
             $this->expectCells($tr, 4, 'groups');
-            $name = $this->cell($tr, 1, 'groups');
-            $group = new Group($this, $name);
-            $group->id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
-            $group->name = $name;
-            $group->members = $members->of($group->id);
+            $id = $this->idIn($this->attribute($tr, '//td[2]/a', 'onclick', 'groups'), '/\w+\s=\s(\d+);/', 'groups');
 
-            return $group;
+            return new Group($this, $this->cell($tr, 1, 'groups'), $id, $members->of($id));
         });
     }
 

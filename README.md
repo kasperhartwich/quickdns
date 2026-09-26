@@ -62,13 +62,17 @@ foreach ($quickDns->getZones() as $zone) {
     echo $zone->domain, ': ', implode(', ', $zone->templates), PHP_EOL;
 }
 
-// Create a zone. create() sets its id, so it can be used right away.
+// Create a zone. create() returns it with its id, so it can be used right away.
 $zone = (new Zone($quickDns, 'example.dk'))->create();
 $zone->delete();
 
 // Or look a zone up by domain.
 $quickDns->getZone('example.dk')->delete();
 ```
+
+Zones, templates and groups are immutable. `create()`, `rename()`, `addZone()` and `removeZone()`
+return the new state as a new object, and the object you called them on keeps describing what it
+was read as.
 
 ### Records
 
@@ -142,12 +146,15 @@ $template = $quickDns->getTemplate('my-template');
 $group = $quickDns->getGroup('my-group');
 
 $zone = $quickDns->getZone('example.dk');
-$template->addZone($zone);      // keeps the zone's other templates
-$group->addZone($zone);
+$zone = $template->addZone($zone);      // keeps the zone's other templates
+$zone = $group->addZone($zone);
 
-$template->removeZone($zone);   // takes off only this one
-$group->removeZone($zone);
+$zone = $template->removeZone($zone);   // takes off only this one
+$zone = $group->removeZone($zone);
 ```
+
+Each of these reads the zone's current templates or groups from QuickDNS first, because QuickDNS
+replaces the whole list, and returns the zone as QuickDNS shows it afterwards.
 
 A zone can use several templates, and `$zone->templates` lists their names. To set the whole list
 at once, by name, id or object:
@@ -159,7 +166,7 @@ $quickDns->setGroups($zone, ['my-group']);
 ```
 
 `Template` and `Group` also have `create()`, `delete()` and `rename()`, just like `Zone`. QuickDNS
-does not answer with a new group's id, so fetch a group with `getGroup()` after creating it.
+does not answer with a new group's id, so a group's `create()` reads the groups page to find it.
 
 ### A template's records
 
@@ -179,7 +186,7 @@ $template->edit(function (RecordSet $records) {
 });
 
 $template->addRecord('mail', 'A', '192.0.2.20', ttl: 3600);
-$template->rename('another-name');
+$template = $template->rename('another-name');
 ```
 
 A template's records are applied to each zone exactly as they are written. Nothing is rewritten:

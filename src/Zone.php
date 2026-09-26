@@ -5,59 +5,41 @@ declare(strict_types=1);
 namespace QuickDns;
 
 use QuickDns\Exceptions\InvalidRecord;
-use QuickDns\Exceptions\MissingId;
 
 /**
- * Class Zone
+ * A zone on the account, as the zones page lists it, or one about to be created:
  *
- * @property string $domain
- * @property array $templates
- * @property array $groups
+ *     $zone = (new Zone($quickDns, 'example.dk'))->create();
  */
-class Zone extends BaseModel
+final readonly class Zone extends BaseModel
 {
-    protected QuickDns $quickdns;
-
-    public $domain;
-
-    public $templates;
-
-    public $groups;
-
     /**
-     * When QuickDNS last changed it, or null when the list does not say.
+     * @param  string[]  $templates  The names of the templates the zone uses
+     * @param  string[]  $groups  The names of the groups the zone is in
+     * @param  \DateTimeImmutable|null  $updated  When QuickDNS last changed it, or null when the list does not say
+     * @param  int[]|null  $templateIds  The ids of its templates, as the zones page carries them. Null when
+     *                                   the zone did not come from that page, which is not the empty list.
+     * @param  int[]|null  $groupIds  The ids of its groups, likewise
      */
-    public ?\DateTimeImmutable $updated = null;
-
-    /**
-     * The ids of the templates the zone uses, as the zones page carries them. Null when the zone
-     * did not come from that page, which is not the same as the empty list.
-     *
-     * @var int[]|null
-     */
-    public ?array $templateIds = null;
-
-    /**
-     * The ids of the groups the zone is in, as the zones page carries them. Null when the zone did
-     * not come from that page.
-     *
-     * @var int[]|null
-     */
-    public ?array $groupIds = null;
-
-    /**
-     * Zone constructor.
-     */
-    public function __construct(QuickDns $quickdns, ?string $domain = null)
-    {
-        $this->quickdns = $quickdns;
-        $this->domain = $domain;
+    public function __construct(
+        private QuickDns $quickdns,
+        public string $domain,
+        ?int $id = null,
+        public array $templates = [],
+        public array $groups = [],
+        public ?\DateTimeImmutable $updated = null,
+        public ?array $templateIds = null,
+        public ?array $groupIds = null,
+    ) {
+        parent::__construct($id);
     }
 
     /**
-     * Create Zone. Sets the zone's id, so it can be deleted or attached right away.
+     * Create the zone on QuickDNS.
+     *
+     * @return self The zone with its id, ready to be edited or attached
      */
-    public function create(bool $get_data = false): static
+    public function create(bool $get_data = false): self
     {
         $response = $this->quickdns->command('addzone', [
             'zone' => $this->domain,
@@ -65,11 +47,8 @@ class Zone extends BaseModel
         ], QuickDns::METHOD_GET);
 
         $zoneid = $response->filterXPath('//response/zoneid');
-        if ($zoneid->count()) {
-            $this->id = (int) trim($zoneid->text());
-        }
 
-        return $this;
+        return new self($this->quickdns, $this->domain, $zoneid->count() ? (int) trim($zoneid->text()) : null, templateIds: [], groupIds: []);
     }
 
     /**
@@ -79,11 +58,7 @@ class Zone extends BaseModel
      */
     public function getRecords(): array
     {
-        if (! $this->id) {
-            throw new MissingId('Zone is not created yet.');
-        }
-
-        return $this->quickdns->getRecords($this);
+        return $this->quickdns->getRecords($this->requireId());
     }
 
     /**
@@ -94,11 +69,7 @@ class Zone extends BaseModel
      */
     public function edit(callable $changes): mixed
     {
-        if (! $this->id) {
-            throw new MissingId('Zone is not created yet.');
-        }
-
-        return $this->quickdns->editZone($this, $changes);
+        return $this->quickdns->editZone($this->requireId(), $changes);
     }
 
     /**
@@ -114,7 +85,7 @@ class Zone extends BaseModel
      */
     public function replaceRecord(Record $record, Record $with): Record
     {
-        return $this->edit(fn (RecordSet $records) => $records->replace($this->same($records, $record), $with));
+        return $this->edit(fn (RecordSet $records) => $records->replace(self::same($records, $record), $with));
     }
 
     /**
@@ -122,7 +93,7 @@ class Zone extends BaseModel
      */
     public function deleteRecord(Record $record): void
     {
-        $this->edit(fn (RecordSet $records) => $records->remove($this->same($records, $record)));
+        $this->edit(fn (RecordSet $records) => $records->remove(self::same($records, $record)));
     }
 
     /**
@@ -131,7 +102,7 @@ class Zone extends BaseModel
      *
      * @throws InvalidRecord when the zone has no such record, or more than one
      */
-    private function same(RecordSet $records, Record $record): Record
+    private static function same(RecordSet $records, Record $record): Record
     {
         $matches = array_values(array_filter($records->all(), fn (Record $candidate) => $candidate->matches($record)));
         if (count($matches) !== 1) {
@@ -142,17 +113,12 @@ class Zone extends BaseModel
     }
 
     /**
-     * Delete Zone
+     * Delete the zone on QuickDNS.
      */
-    public function delete(): bool
+    public function delete(): void
     {
-        if (! $this->id) {
-            throw new MissingId('Zone is not created yet.');
-        }
         $this->quickdns->command('delzone', [
-            'id' => $this->id,
+            'id' => $this->requireId(),
         ], QuickDns::METHOD_GET);
-
-        return true;
     }
 }

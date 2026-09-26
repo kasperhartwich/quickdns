@@ -51,6 +51,23 @@ class TestCase extends \PHPUnit\Framework\TestCase
         return file_get_contents($this->fixturePath($name) ?? throw new \InvalidArgumentException('No fixture '.$name));
     }
 
+    /**
+     * The recorded zones page, its one zone (17287) using these templates and in these groups.
+     *
+     * @param  int[]  $templateIds
+     * @param  int[]  $groupIds
+     */
+    protected function zonesPage(array $templateIds, array $groupIds = [738]): string
+    {
+        $array = fn (array $ids) => 'new Array('.implode(',', array_map(fn (int $id) => "'".$id."'", $ids)).')';
+
+        return str_replace(
+            ["templates(parentNode.parentNode.rowIndex, new Array('17284'))", "groups(parentNode.parentNode.rowIndex, new Array(), new Array('738'))"],
+            ['templates(parentNode.parentNode.rowIndex, '.$array($templateIds).')', 'groups(parentNode.parentNode.rowIndex, new Array(), '.$array($groupIds).')'],
+            $this->fixture('zones'),
+        );
+    }
+
     protected function response(string $fixture): Response
     {
         $path = $this->fixturePath($fixture);
@@ -75,7 +92,15 @@ class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function lastRequestUri(): string
     {
-        $uri = (string) end($this->history)['request']->getUri();
+        return $this->requestUri(count($this->history) - 1);
+    }
+
+    /**
+     * The nth request's URI relative to https://www.quickdns.dk/ (0 is the login).
+     */
+    protected function requestUri(int $n): string
+    {
+        $uri = (string) $this->history[$n]['request']->getUri();
         $this->assertStringStartsWith('https://www.quickdns.dk/', $uri);
 
         return substr($uri, strlen('https://www.quickdns.dk/'));

@@ -75,8 +75,7 @@ final class ReloginTest extends TestCase
 
     public function test_a_logout_in_the_middle_of_an_edit_is_not_papered_over()
     {
-        $zone = new Zone($this->quickDns(['editzone', 'login-failed', 'login-failed']), 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17363;
+        $zone = new Zone($this->quickDns(['editzone', 'login-failed', 'login-failed']), 'flyvende-agurk-pingvin.dk', 17363);
 
         try {
             $zone->edit(fn (RecordSet $records) => $records->add('www', 'A', '192.0.2.10'));

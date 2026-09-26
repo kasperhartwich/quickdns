@@ -5,43 +5,35 @@ declare(strict_types=1);
 namespace QuickDns;
 
 use QuickDns\Exceptions\InvalidRecord;
-use QuickDns\Exceptions\MissingId;
 
 /**
- * Class Template
- *
- * @property string $name
- * @property array $zones
- * @property array $groups
+ * A template on the account, as the templates page lists it, or one about to be created. A
+ * template holds records like a zone, and every zone using it gets them.
  */
-class Template extends BaseModel
+final readonly class Template extends BaseModel
 {
-    protected QuickDns $quickdns;
-
-    public $name;
-
-    public $zones;
-
-    public $groups;
-
     /**
-     * When QuickDNS last changed it, or null when the list does not say.
+     * @param  int  $zones  How many zones use it
+     * @param  string[]  $groups  The names of the groups it is shared with
+     * @param  \DateTimeImmutable|null  $updated  When QuickDNS last changed it, or null when the list does not say
      */
-    public ?\DateTimeImmutable $updated = null;
-
-    /**
-     * Template constructor.
-     */
-    public function __construct(QuickDns $quickdns, ?string $name = null)
-    {
-        $this->quickdns = $quickdns;
-        $this->name = $name;
+    public function __construct(
+        private QuickDns $quickdns,
+        public string $name,
+        ?int $id = null,
+        public int $zones = 0,
+        public array $groups = [],
+        public ?\DateTimeImmutable $updated = null,
+    ) {
+        parent::__construct($id);
     }
 
     /**
-     * Create Template. Sets the template's id, so it can be deleted or used right away.
+     * Create the template on QuickDNS.
+     *
+     * @return self The template with its id, ready to be edited or used
      */
-    public function create(): static
+    public function create(): self
     {
         $response = $this->quickdns->command('addtemplate', [
             'zone' => $this->name,
@@ -49,41 +41,33 @@ class Template extends BaseModel
 
         // QuickDNS answers with the template's id in <zoneid>.
         $zoneid = $response->filterXPath('//response/zoneid');
-        if ($zoneid->count()) {
-            $this->id = (int) trim($zoneid->text());
-        }
 
-        return $this;
+        return new self($this->quickdns, $this->name, $zoneid->count() ? (int) trim($zoneid->text()) : null);
     }
 
     /**
-     * Delete Template
+     * Delete the template on QuickDNS. QuickDNS refuses while zones use it.
      */
-    public function delete(): bool
+    public function delete(): void
     {
-        if (! $this->id) {
-            throw new MissingId('Template is not created yet.');
-        }
         $this->quickdns->command('deltemplate', [
-            'id' => $this->id,
+            'id' => $this->requireId(),
         ], QuickDns::METHOD_GET);
-
-        return true;
     }
 
     /**
      * Rename the template. Zones using it follow along, since they are tied to its id.
      *
+     * @return self The template under its new name
      */
-    public function rename(string $name): static
+    public function rename(string $name): self
     {
         $this->quickdns->command('renametemplate', [
-            'zone' => $this->id ?: throw new MissingId('Template is not created yet.'),
+            'zone' => $this->requireId(),
             'name' => $name,
         ]);
-        $this->name = $name;
 
-        return $this;
+        return new self($this->quickdns, $name, $this->id, $this->zones, $this->groups, $this->updated);
     }
 
     /**
@@ -93,7 +77,7 @@ class Template extends BaseModel
      */
     public function getRecords(): array
     {
-        return $this->quickdns->getTemplateRecords($this);
+        return $this->quickdns->getTemplateRecords($this->requireId());
     }
 
     /**
@@ -105,7 +89,7 @@ class Template extends BaseModel
      */
     public function edit(callable $changes): mixed
     {
-        return $this->quickdns->editTemplate($this, $changes);
+        return $this->quickdns->editTemplate($this->requireId(), $changes);
     }
 
     /**
@@ -121,7 +105,7 @@ class Template extends BaseModel
      */
     public function replaceRecord(Record $record, Record $with): Record
     {
-        return $this->edit(fn (RecordSet $records) => $records->replace($this->same($records, $record), $with));
+        return $this->edit(fn (RecordSet $records) => $records->replace(self::same($records, $record), $with));
     }
 
     /**
@@ -129,7 +113,7 @@ class Template extends BaseModel
      */
     public function deleteRecord(Record $record): void
     {
-        $this->edit(fn (RecordSet $records) => $records->remove($this->same($records, $record)));
+        $this->edit(fn (RecordSet $records) => $records->remove(self::same($records, $record)));
     }
 
     /**
@@ -138,7 +122,7 @@ class Template extends BaseModel
      *
      * @throws InvalidRecord when the template has no such record, or more than one
      */
-    private function same(RecordSet $records, Record $record): Record
+    private static function same(RecordSet $records, Record $record): Record
     {
         $matches = array_values(array_filter($records->all(), fn (Record $candidate) => $candidate->matches($record)));
         if (count($matches) !== 1) {
@@ -149,40 +133,41 @@ class Template extends BaseModel
     }
 
     /**
-     * Add a zone to the template, keeping the zone's other templates.
-     */
-    public function addZone(Zone $zone): static
-    {
-        $this->quickdns->setTemplates($zone, array_merge($this->templatesOf($zone), [$this]));
-
-        return $this;
-    }
-
-    /**
-     * Take a zone off the template, leaving the zone's other templates alone.
-     */
-    public function removeZone(Zone $zone): static
-    {
-        $this->quickdns->setTemplates($zone, array_values(array_filter(
-            $this->templatesOf($zone),
-            fn (int $id) => $id !== $this->id,
-        )));
-
-        return $this;
-    }
-
-    /**
-     * The ids of the templates the zone has right now. The zones page carries them, so no lookup
-     * is needed for a zone that came from there.
+     * Put the template on a zone, keeping the zone's other templates. The zone's current list is
+     * read from QuickDNS first, since QuickDNS replaces the whole list.
      *
-     * @return int[]
+     * @return Zone The zone as QuickDNS shows it afterwards
      */
-    private function templatesOf(Zone $zone): array
+    public function addZone(Zone $zone): Zone
     {
-        if ($zone->templateIds !== null) {
-            return $zone->templateIds;
+        $id = $this->requireId();
+        $current = $this->quickdns->getZone($zone->domain);
+        if (in_array($id, $current->templateIds ?? [], true)) {
+            return $current;
         }
 
-        return $this->quickdns->getZone($zone->domain)->templateIds;
+        $ids = [...$current->templateIds ?? [], $id];
+        $this->quickdns->setTemplates($current, $ids);
+
+        return $this->quickdns->getZone($current->domain);
+    }
+
+    /**
+     * Take the template off a zone, leaving the zone's other templates alone.
+     *
+     * @return Zone The zone as QuickDNS shows it afterwards
+     */
+    public function removeZone(Zone $zone): Zone
+    {
+        $id = $this->requireId();
+        $current = $this->quickdns->getZone($zone->domain);
+        if (! in_array($id, $current->templateIds ?? [], true)) {
+            return $current;
+        }
+
+        $ids = array_values(array_filter($current->templateIds ?? [], fn (int $other) => $other !== $id));
+        $this->quickdns->setTemplates($current, $ids);
+
+        return $this->quickdns->getZone($current->domain);
     }
 }

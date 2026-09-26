@@ -18,8 +18,7 @@ final class ZoneEditTest extends TestCase
 {
     private function zone(array $fixtures): Zone
     {
-        $zone = new Zone($this->quickDns($fixtures), 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17363;
+        $zone = new Zone($this->quickDns($fixtures), 'flyvende-agurk-pingvin.dk', 17363);
 
         return $zone;
     }

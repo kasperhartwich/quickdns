@@ -15,8 +15,7 @@ final class RecordTest extends TestCase
      */
     private function records(): array
     {
-        $zone = new Zone($this->quickDns(['editzone']), 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17363;
+        $zone = new Zone($this->quickDns(['editzone']), 'flyvende-agurk-pingvin.dk', 17363);
 
         return $zone->getRecords();
     }
@@ -81,8 +80,7 @@ final class RecordTest extends TestCase
         $page = $this->fixture('editzone');
         // Make the cell text shorter than the title, as QuickDNS may for long values.
         $page = preg_replace('/(<td title="v=spf1[^"]*">)v=spf1[^<]*/', '$1v=spf1 include:...', $page);
-        $zone = new Zone($this->quickDns([$page]), 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17363;
+        $zone = new Zone($this->quickDns([$page]), 'flyvende-agurk-pingvin.dk', 17363);
 
         $this->assertStringEndsWith('lang-tekst-uden-specialtegn', $zone->getRecords()[8]->value);
     }

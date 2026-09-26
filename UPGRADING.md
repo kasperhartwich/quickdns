@@ -60,3 +60,25 @@ compare or store zone ids.
   with `id`, `name`, `email` and `confirmed` (false while an invitation is not accepted).
 - `Group::$updated` is gone. 2.x filled it with "Ret", the label of the rename link, since the groups
   page shows no time.
+
+### Models are final and immutable
+
+`Zone`, `Template` and `Group` are now `final readonly` classes on an abstract `BaseModel`. Their
+properties can no longer be assigned, and they cannot be extended.
+
+- **Ids and fields go in through the constructor:** `new Zone($quickDns, 'example.dk', 17287)`
+  rather than setting `$zone->id` afterwards. `new Zone($quickDns, 'example.dk')` still describes a
+  zone that is about to be created.
+- **`create()` returns a new object carrying the id**, and the one you called it on keeps a null
+  id. Write `$zone = (new Zone($quickDns, 'example.dk'))->create();`, as the README always has. A
+  group's `create()` now reads the groups page to find the id QuickDNS does not answer with.
+- **`delete()` returns nothing** instead of `true`. It throws when it fails, as before.
+- **`rename()` returns the renamed object**, and the one you called it on keeps the old name.
+- **`Template::addZone()`, `removeZone()` and their `Group` counterparts return the `Zone`** as
+  QuickDNS shows it afterwards, where 2.x returned the template or group. They always read the zone's current list from
+  QuickDNS first, and do nothing when there is nothing to change. 2.x trusted the list the `Zone`
+  object was read with.
+- **`requireId()`** returns the id or throws `MissingId`.
+- **Removed properties throw.** Reading a property that 3.0 removed throws a `LogicException` naming
+  the replacement, for example `Group::$updated`, rather than giving null and a warning. So does any
+  other unknown property.

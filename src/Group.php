@@ -4,112 +4,103 @@ declare(strict_types=1);
 
 namespace QuickDns;
 
-use QuickDns\Exceptions\MissingId;
+use QuickDns\Exceptions\NotFound;
 
 /**
- * Class Group
- *
- * @property string $name
- * @property Member[] $members
+ * A group on the account, as the groups page lists it, or one about to be created.
  */
-class Group extends BaseModel
+final readonly class Group extends BaseModel
 {
-    protected QuickDns $quickdns;
-
-    public $name;
-
     /**
-     * @var Member[]
+     * @param  Member[]  $members
      */
-    public $members = [];
-
-    /**
-     * Group constructor.
-     */
-    public function __construct(QuickDns $quickdns, ?string $name = null)
-    {
-        $this->quickdns = $quickdns;
-        $this->name = $name;
+    public function __construct(
+        private QuickDns $quickdns,
+        public string $name,
+        ?int $id = null,
+        public array $members = [],
+    ) {
+        parent::__construct($id);
     }
 
     /**
-     * Create Group. QuickDNS does not answer with the new group's id, so fetch the group with
-     * QuickDns::getGroup() before deleting it or adding zones.
+     * Create the group on QuickDNS. QuickDNS does not answer with the new group's id, so the
+     * groups page is read to find it.
+     *
+     * @return self The group with its id
+     *
+     * @throws NotFound when the new group is not on the groups page
      */
-    public function create(): static
+    public function create(): self
     {
         $this->quickdns->command('addgroup', [
             'group' => $this->name,
         ], QuickDns::METHOD_GET);
 
-        return $this;
+        return $this->quickdns->getGroup($this->name);
     }
 
     /**
-     * Delete Group
+     * Delete the group on QuickDNS.
      */
-    public function delete(): bool
+    public function delete(): void
     {
-        if (! $this->id) {
-            throw new MissingId('Group is not created yet.');
-        }
         $this->quickdns->command('delgroup', [
-            'id' => $this->id,
+            'id' => $this->requireId(),
         ], QuickDns::METHOD_GET);
-
-        return true;
     }
 
     /**
      * Rename the group.
      *
+     * @return self The group under its new name
      */
-    public function rename(string $name): static
+    public function rename(string $name): self
     {
         $this->quickdns->command('renamegroup', [
-            'group' => $this->id ?: throw new MissingId('Group is not created yet.'),
+            'group' => $this->requireId(),
             'name' => $name,
         ]);
-        $this->name = $name;
 
-        return $this;
+        return new self($this->quickdns, $name, $this->id, $this->members);
     }
 
     /**
-     * Add a zone to the group, keeping the zone's other groups.
-     */
-    public function addZone(Zone $zone): static
-    {
-        $this->quickdns->setGroups($zone, array_merge($this->groupsOf($zone), [$this]));
-
-        return $this;
-    }
-
-    /**
-     * Take a zone off the group, leaving the zone's other groups alone.
-     */
-    public function removeZone(Zone $zone): static
-    {
-        $this->quickdns->setGroups($zone, array_values(array_filter(
-            $this->groupsOf($zone),
-            fn (int $id) => $id !== $this->id,
-        )));
-
-        return $this;
-    }
-
-    /**
-     * The ids of the groups the zone has right now. The zones page carries them, so no lookup
-     * is needed for a zone that came from there.
+     * Put a zone in the group, keeping the zone's other groups. The zone's current list is read
+     * from QuickDNS first, since QuickDNS replaces the whole list.
      *
-     * @return int[]
+     * @return Zone The zone as QuickDNS shows it afterwards
      */
-    private function groupsOf(Zone $zone): array
+    public function addZone(Zone $zone): Zone
     {
-        if ($zone->groupIds !== null) {
-            return $zone->groupIds;
+        $id = $this->requireId();
+        $current = $this->quickdns->getZone($zone->domain);
+        if (in_array($id, $current->groupIds ?? [], true)) {
+            return $current;
         }
 
-        return $this->quickdns->getZone($zone->domain)->groupIds;
+        $ids = [...$current->groupIds ?? [], $id];
+        $this->quickdns->setGroups($current, $ids);
+
+        return $this->quickdns->getZone($current->domain);
+    }
+
+    /**
+     * Take a zone out of the group, leaving the zone's other groups alone.
+     *
+     * @return Zone The zone as QuickDNS shows it afterwards
+     */
+    public function removeZone(Zone $zone): Zone
+    {
+        $id = $this->requireId();
+        $current = $this->quickdns->getZone($zone->domain);
+        if (! in_array($id, $current->groupIds ?? [], true)) {
+            return $current;
+        }
+
+        $ids = array_values(array_filter($current->groupIds ?? [], fn (int $other) => $other !== $id));
+        $this->quickdns->setGroups($current, $ids);
+
+        return $this->quickdns->getZone($current->domain);
     }
 }

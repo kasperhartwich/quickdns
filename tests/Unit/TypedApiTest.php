@@ -61,19 +61,6 @@ final class TypedApiTest extends BaseTestCase
         $this->assertSame([], $untyped);
     }
 
-    /**
-     * The models' public properties are typed in the pull request that fixes what their types
-     * actually are: Zone::$id is a string behind an int docblock, Template::$zones an int behind
-     * an array one. Until then they are listed here, and this test fails the moment one is typed
-     * and not taken off the list.
-     */
-    private const UNTYPED_UNTIL_THE_MODELS_ARE_REWRITTEN = [
-        BaseModel::class => ['$id'],
-        Zone::class => ['$domain', '$templates', '$groups'],
-        Template::class => ['$name', '$zones', '$groups'],
-        Group::class => ['$name', '$members'],
-    ];
-
     #[DataProvider('classes')]
     public function test_every_property_is_typed(string $class)
     {
@@ -84,7 +71,7 @@ final class TypedApiTest extends BaseTestCase
             }
         }
 
-        $this->assertSame(self::UNTYPED_UNTIL_THE_MODELS_ARE_REWRITTEN[$class] ?? [], $untyped);
+        $this->assertSame([], $untyped);
     }
 
     public function test_every_file_declares_strict_types()
