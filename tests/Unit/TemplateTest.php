@@ -82,6 +82,28 @@ final class TemplateTest extends TestCase
         $this->assertSame('updatetemplates?zone=17296&template=17284', urldecode($this->lastRequestUri()));
     }
 
+    public function test_a_numeric_string_is_a_name_not_an_id()
+    {
+        $fake = new \QuickDns\Testing\FakeQuickDns();
+        $id = $fake->addTemplate('2024');
+        $fake->addZone('example.dk');
+        $quickDns = $fake->quickDns();
+
+        $quickDns->setTemplates($quickDns->getZone('example.dk'), ['2024']);
+
+        $this->assertSame(['2024'], $fake->templatesOf('example.dk'));
+        $this->assertNotSame(2024, $id);
+    }
+
+    public function test_an_id_of_zero_is_refused_before_any_request()
+    {
+        $quickDns = $this->quickDns();
+
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
+        $this->expectExceptionMessage('Not a zone id: 0');
+        $quickDns->setTemplates(0, []);
+    }
+
     public function test_set_templates_to_none()
     {
         $quickDns = $this->quickDns(['updatetemplates']);

@@ -109,3 +109,14 @@ The properties `Zone::$templates`, `Zone::$groups` and `Template::$groups` still
 - **`isLoggedIn()`** says whether the client holds a login session.
 - **A `QuickDns` subclass that overrides `request()`** and answers every request itself is no
   longer asked to log in, since the automatic login happens below `request()`.
+
+### Ids are ints, names are strings
+
+- **Ids are ints.** `getRecords()`, `editZone()`, `setTemplates()` and `setGroups()` take a `Zone` or
+  its id as an int, and `getTemplateRecords()` and `editTemplate()` take a `Template` or its int id.
+  A numeric string such as `'17287'` is no longer accepted: cast it with `(int)`.
+- **Strings are names.** In the lists `setTemplates()` and `setGroups()` take, an int is an id and
+  a string is a name, always. 2.x read any numeric string as an id, so a template called `2024` was
+  taken to be template 2024.
+- **`Zone::create()`'s parameter is `$getData`**, not `$get_data`. This only matters for named
+  arguments.
