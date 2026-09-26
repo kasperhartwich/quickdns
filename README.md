@@ -22,6 +22,8 @@ talks to the same endpoints as the QuickDNS website.
 composer require kasperhartwich/quickdns
 ```
 
+Upgrading from 2.x? [UPGRADING.md](UPGRADING.md) lists what changed in 3.0.
+
 ## Usage
 
 The client logs in on its first request, not when it is created, so it can be built long before it
@@ -165,6 +167,9 @@ $quickDns->setGroups($zone, ['my-group']);
 
 `Template` and `Group` also have `create()`, `delete()` and `rename()`, just like `Zone`. QuickDNS
 does not answer with a new group's id, so a group's `create()` reads the groups page to find it.
+
+A group's `members` are the QuickDNS users it is shared with, as `QuickDns\Member` objects with
+`id`, `name`, `email` and `confirmed` (false while an invitation is not accepted).
 
 ### A template's records
 
