@@ -38,10 +38,9 @@ final class ZoneTest extends TestCase
 
     public function test_delete()
     {
-        $zone = new Zone($this->quickDns(['delzone']), 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17287;
+        $zone = new Zone($this->quickDns(['delzone']), 'flyvende-agurk-pingvin.dk', 17287);
 
-        $this->assertTrue($zone->delete());
+        $zone->delete();
         $this->assertSame('delzone?id=17287', $this->lastRequestUri());
     }
 
@@ -58,7 +57,7 @@ final class ZoneTest extends TestCase
     {
         $zone = (new Zone($this->quickDns(['addzone-ok', 'delzone']), 'flyvende-agurk-pingvin.dk'))->create();
 
-        $this->assertTrue($zone->delete());
+        $zone->delete();
         $this->assertSame('delzone?id=17286', $this->lastRequestUri());
     }
 }

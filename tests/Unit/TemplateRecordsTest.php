@@ -19,8 +19,7 @@ final class TemplateRecordsTest extends TestCase
 {
     public function test_reading_a_templates_records()
     {
-        $template = new Template($this->quickDns(['editzone']), 'test-template');
-        $template->id = 17284;
+        $template = new Template($this->quickDns(['editzone']), 'test-template', 17284);
 
         $records = $template->getRecords();
 
@@ -30,8 +29,7 @@ final class TemplateRecordsTest extends TestCase
 
     public function test_the_session_is_saved_as_a_template()
     {
-        $template = new Template($this->quickDns(['editzone', 'submitzonechange-initial', 'submitzonechange-insert', 'editzonedone-saved']), 'test-template');
-        $template->id = 17284;
+        $template = new Template($this->quickDns(['editzone', 'submitzonechange-initial', 'submitzonechange-insert', 'editzonedone-saved']), 'test-template', 17284);
 
         $template->edit(fn (RecordSet $records) => $records->add('zulu', 'A', '192.0.2.26', ttl: 3600));
 
@@ -43,8 +41,7 @@ final class TemplateRecordsTest extends TestCase
 
     public function test_an_exception_discards_the_template_session()
     {
-        $template = new Template($this->quickDns(['editzone', 'submitzonechange-initial', 'submitzonechange-insert', 'editzonedone-discarded']), 'test-template');
-        $template->id = 17284;
+        $template = new Template($this->quickDns(['editzone', 'submitzonechange-initial', 'submitzonechange-insert', 'editzonedone-discarded']), 'test-template', 17284);
 
         try {
             $template->edit(function (RecordSet $records) {
@@ -103,9 +100,11 @@ final class TemplateRecordsTest extends TestCase
         $quickDns = $fake->quickDns();
         $template = $quickDns->getTemplate('standard');
 
-        $template->rename('fancy');
+        $renamed = $template->rename('fancy');
 
-        $this->assertSame('fancy', $template->name);
+        $this->assertSame('fancy', $renamed->name);
+        $this->assertSame($template->id, $renamed->id);
+        $this->assertSame('standard', $template->name, 'The old object keeps describing what it was read as.');
         $this->assertTrue($fake->hasTemplate('fancy'));
         $this->assertFalse($fake->hasTemplate('standard'));
     }

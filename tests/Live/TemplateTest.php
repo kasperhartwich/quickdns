@@ -125,9 +125,9 @@ final class TemplateTest extends TestCase
         $group = $this->quickDns->getGroup($this->testGroup);
 
         try {
-            $template->rename('quickdns-api-renamed');
+            $renamed = $template->rename('quickdns-api-renamed');
 
-            $this->assertSame('quickdns-api-renamed', $template->name);
+            $this->assertSame('quickdns-api-renamed', $renamed->name);
             $this->assertSame($template->id, $this->quickDns->getTemplate('quickdns-api-renamed')->id);
 
             $group->rename('quickdns-api-renamed-group');

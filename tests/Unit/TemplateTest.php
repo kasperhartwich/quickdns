@@ -30,32 +30,51 @@ final class TemplateTest extends TestCase
 
     public function test_delete()
     {
-        $template = new Template($this->quickDns(['deltemplate']), 'sjaskende-rabarber');
-        $template->id = 17295;
+        $template = new Template($this->quickDns(['deltemplate']), 'sjaskende-rabarber', 17295);
 
-        $this->assertTrue($template->delete());
+        $template->delete();
         $this->assertSame('deltemplate?id=17295', $this->lastRequestUri());
     }
 
     public function test_add_zone_keeps_the_zones_other_templates()
     {
-        $quickDns = $this->quickDns(['updatetemplates']);
-        $template = new Template($quickDns, 'sjaskende-rabarber');
-        $template->id = 17295;
-        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17296;
-        $zone->templateIds = [17280];
+        $quickDns = $this->quickDns([$this->zonesPage([17280]), 'updatetemplates', $this->zonesPage([17280, 17295])]);
+        $template = new Template($quickDns, 'sjaskende-rabarber', 17295);
 
-        $this->assertSame($template, $template->addZone($zone));
+        $zone = $template->addZone(new Zone($quickDns, 'flyvende-agurk-pingvin.dk'));
+
         // The other template is sent along, or QuickDNS would drop it.
-        $this->assertSame('updatetemplates?zone=17296&template=17280&template=17295', urldecode($this->lastRequestUri()));
+        $this->assertSame('updatetemplates?zone=17287&template=17280&template=17295', urldecode($this->requestUri(2)));
+        // The zone as QuickDNS shows it afterwards: read again.
+        $this->assertSame('zones', $this->lastRequestUri());
+        $this->assertSame([17280, 17295], $zone->templateIds);
+    }
+
+    public function test_the_zones_list_is_read_fresh_every_time()
+    {
+        // The Zone passed in claims no templates; QuickDNS knows better, and QuickDNS wins.
+        $quickDns = $this->quickDns([$this->zonesPage([17280]), 'updatetemplates', 'zones', $this->zonesPage([17280, 17295]), 'updatetemplates', 'zones']);
+        $stale = new Zone($quickDns, 'flyvende-agurk-pingvin.dk', 17287, templateIds: []);
+
+        (new Template($quickDns, 'sjaskende-rabarber', 17295))->addZone($stale);
+        (new Template($quickDns, 'another', 17300))->addZone($stale);
+
+        $this->assertSame('updatetemplates?zone=17287&template=17280&template=17295&template=17300', urldecode($this->requestUri(5)));
+    }
+
+    public function test_adding_a_template_the_zone_has_sends_nothing()
+    {
+        $quickDns = $this->quickDns([$this->zonesPage([17295])]);
+
+        (new Template($quickDns, 'sjaskende-rabarber', 17295))->addZone(new Zone($quickDns, 'flyvende-agurk-pingvin.dk'));
+
+        $this->assertSame('zones', $this->lastRequestUri());
     }
 
     public function test_set_templates_by_name()
     {
         $quickDns = $this->quickDns(['templates', 'updatetemplates']);
-        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17296;
+        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk', 17296);
 
         $quickDns->setTemplates($zone, ['test-template']);
 
@@ -82,57 +101,37 @@ final class TemplateTest extends TestCase
 
     public function test_add_unknown_zone()
     {
-        $quickDns = $this->quickDns(['updatetemplates-error']);
-        $template = new Template($quickDns, 'sjaskende-rabarber');
-        $template->id = 17295;
-        $zone = new Zone($quickDns, 'findes-ikke.dk');
-        $zone->id = 999999999;
-        $zone->templateIds = [];   // known to have none, so no lookup
+        $quickDns = $this->quickDns(['zones']);
+        $template = new Template($quickDns, 'sjaskende-rabarber', 17295);
 
-        $this->expectException(CommandFailed::class);
-        $this->expectExceptionMessage('Zonen findes ikke');
-        $template->addZone($zone);
+        $this->expectException(\QuickDns\Exceptions\NotFound::class);
+        $template->addZone(new Zone($quickDns, 'findes-ikke.dk', 999999999));
     }
 
     public function test_remove_zone_leaves_the_others_alone()
     {
-        $quickDns = $this->quickDns(['updatetemplates']);
-        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17296;
-        $zone->templateIds = [17295, 17280];
+        $quickDns = $this->quickDns([$this->zonesPage([17295, 17280]), 'updatetemplates', $this->zonesPage([17280])]);
 
-        $template = new Template($quickDns, 'sjaskende-rabarber');
-        $template->id = 17295;
-        $template->removeZone($zone);
+        $zone = (new Template($quickDns, 'sjaskende-rabarber', 17295))->removeZone(new Zone($quickDns, 'flyvende-agurk-pingvin.dk'));
 
-        $this->assertSame('updatetemplates?zone=17296&template=17280', urldecode($this->lastRequestUri()));
+        $this->assertSame('updatetemplates?zone=17287&template=17280', urldecode($this->requestUri(2)));
+        $this->assertSame([17280], $zone->templateIds);
     }
 
     public function test_remove_the_last_template()
     {
-        $quickDns = $this->quickDns(['updatetemplates']);
-        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17296;
-        $zone->templateIds = [17295];
+        $quickDns = $this->quickDns([$this->zonesPage([17295]), 'updatetemplates', $this->zonesPage([])]);
 
-        $template = new Template($quickDns, 'sjaskende-rabarber');
-        $template->id = 17295;
-        $template->removeZone($zone);
+        (new Template($quickDns, 'sjaskende-rabarber', 17295))->removeZone(new Zone($quickDns, 'flyvende-agurk-pingvin.dk'));
 
-        $this->assertSame('updatetemplates?zone=17296', urldecode($this->lastRequestUri()));
+        $this->assertSame('updatetemplates?zone=17287', urldecode($this->requestUri(2)));
     }
 
-    public function test_a_zone_without_a_template_list_is_looked_up()
+    public function test_a_template_without_an_id_cannot_be_added()
     {
-        $quickDns = $this->quickDns(['zones', 'updatetemplates']);
-        $template = new Template($quickDns, 'sjaskende-rabarber');
-        $template->id = 17295;
-        $zone = new Zone($quickDns, 'flyvende-agurk-pingvin.dk');
-        $zone->id = 17287;
+        $quickDns = $this->quickDns();
 
-        $template->addZone($zone);
-
-        // The recorded zones page carries test-template's id in the row's onclick.
-        $this->assertSame('updatetemplates?zone=17287&template=17284&template=17295', urldecode($this->lastRequestUri()));
+        $this->expectException(\QuickDns\Exceptions\MissingId::class);
+        (new Template($quickDns, 'sjaskende-rabarber'))->addZone(new Zone($quickDns, 'flyvende-agurk-pingvin.dk'));
     }
 }
